@@ -1,0 +1,1 @@
+import{t as e}from"./api-DayLQRLw.js";async function t(t){let n=new FormData;return n.append(`file`,t),(await e(`/uploads`,{method:`POST`,body:n})).url}export{t as uploadImage};

@@ -1,0 +1,1 @@
+import{t as e}from"./api-DayLQRLw.js";async function t(t){return e(`/users/${t}`)}async function n(t){return e(`/users/me`,{method:`PUT`,body:JSON.stringify(t)})}export{t as getPublicProfile,n as updateProfile};
