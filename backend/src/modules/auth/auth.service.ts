@@ -1,34 +1,53 @@
 import { ApiError } from '../../common/errors/ApiError';
 import { generateToken } from '../../common/config/jwt';
 import { CircleUser, AuthSession, SignUpInput, OnboardingInput } from './auth.types';
+import { prisma } from '../../common/config/prisma';
+
+const toCircleUser = (user: any): CircleUser => ({
+  id: user.id,
+  fullName: user.fullName,
+  phoneNumber: user.phoneNumber,
+  email: user.email || undefined,
+  avatarUrl: user.avatarUrl || undefined,
+  city: user.city || undefined,
+  neighborhood: user.neighborhood || undefined,
+  bio: user.bio || undefined,
+  preferredLanguage: user.preferredLanguage as 'ar',
+  phoneVerified: user.phoneVerified,
+  identityVerified: user.identityVerified,
+  onboardingCompleted: user.onboardingCompleted,
+  memberSince: user.createdAt.toISOString(),
+  createdAt: user.createdAt.toISOString(),
+  updatedAt: user.updatedAt.toISOString(),
+});
 
 // In-memory store for OTPs (TODO: Move to Redis or DB later)
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
 export const authService = {
   async signUp(data: SignUpInput): Promise<AuthSession> {
-    // TODO: Replace with prisma.user.create(...) once User model exists
-    const mockUser: CircleUser = {
-      id: 'mock-user-id-' + Date.now(),
-      fullName: data.fullName,
-      phoneNumber: data.phoneNumber,
-      email: data.email,
-      preferredLanguage: 'ar',
-      phoneVerified: true, // Assuming true after sign up/otp flow
-      identityVerified: false,
-      onboardingCompleted: false,
-      memberSince: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const user = await prisma.user.create({
+        data: {
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          email: data.email,
+        },
+      });
 
-    const token = generateToken({ userId: mockUser.id });
+      const token = generateToken({ userId: user.id });
 
-    return {
-      user: mockUser,
-      token,
-      createdAt: new Date().toISOString(),
-    };
+      return {
+        user: toCircleUser(user),
+        token,
+        createdAt: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw ApiError.conflict('Phone number or email already in use');
+      }
+      throw error;
+    }
   },
 
   async sendOtp(phoneNumber: string): Promise<void> {
@@ -51,64 +70,42 @@ export const authService = {
     // OTP verified, remove from store
     otpStore.delete(phoneNumber);
 
-    // TODO: Replace mock user lookup with prisma.user.findUnique(...) once User model exists
-    // If user doesn't exist, we might need to handle it differently, but for now mock it as existing
-    const mockUser: CircleUser = {
-      id: 'mock-user-id-from-signin',
-      fullName: 'Mock User',
-      phoneNumber,
-      preferredLanguage: 'ar',
-      phoneVerified: true,
-      identityVerified: false,
-      onboardingCompleted: false,
-      memberSince: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const user = await prisma.user.findUnique({ where: { phoneNumber } });
+    if (!user) {
+      throw ApiError.notFound('User not found. Please sign up first.');
+    }
 
-    const token = generateToken({ userId: mockUser.id });
+    const token = generateToken({ userId: user.id });
 
     return {
-      user: mockUser,
+      user: toCircleUser(user),
       token,
       createdAt: new Date().toISOString(),
     };
   },
 
   async getMe(userId: string): Promise<CircleUser> {
-    // TODO: Replace with prisma.user.findUnique({ where: { id: userId } })
-    const mockUser: CircleUser = {
-      id: userId,
-      fullName: 'Mock User ' + userId,
-      phoneNumber: '+1234567890',
-      preferredLanguage: 'ar',
-      phoneVerified: true,
-      identityVerified: false,
-      onboardingCompleted: false,
-      memberSince: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
 
-    return mockUser;
+    return toCircleUser(user);
   },
 
   async completeOnboarding(userId: string, data: OnboardingInput): Promise<CircleUser> {
-    // TODO: Replace with prisma.user.update(...)
-    const mockUser: CircleUser = {
-      id: userId,
-      fullName: 'Mock User',
-      phoneNumber: '+1234567890',
-      ...data,
-      preferredLanguage: 'ar',
-      phoneVerified: true,
-      identityVerified: false,
-      onboardingCompleted: true,
-      memberSince: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        city: data.city,
+        neighborhood: data.neighborhood,
+        bio: data.bio,
+        avatarUrl: data.avatarUrl,
+        onboardingCompleted: true,
+      },
+    });
 
-    return mockUser;
+    return toCircleUser(user);
   }
 };
