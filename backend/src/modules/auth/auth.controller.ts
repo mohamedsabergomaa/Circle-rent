@@ -11,7 +11,7 @@ export const authController = {
       res.status(201).json(result);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        next(ApiError.badRequest(error.errors[0].message));
+        next(ApiError.badRequest(error.errors?.[0]?.message || error.issues?.[0]?.message || 'Validation error'));
       } else {
         next(error);
       }
@@ -25,7 +25,7 @@ export const authController = {
       res.json({ otpSent: true });
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        next(ApiError.badRequest(error.errors[0].message));
+        next(ApiError.badRequest(error.errors?.[0]?.message || error.issues?.[0]?.message || 'Validation error'));
       } else {
         next(error);
       }
@@ -39,7 +39,7 @@ export const authController = {
       res.json(result);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        next(ApiError.badRequest(error.errors[0].message));
+        next(ApiError.badRequest(error.errors?.[0]?.message || error.issues?.[0]?.message || 'Validation error'));
       } else {
         next(error);
       }
@@ -79,7 +79,7 @@ export const authController = {
       res.json(result);
     } catch (error: any) {
       if (error.name === 'ZodError') {
-        next(ApiError.badRequest(error.errors[0].message));
+        next(ApiError.badRequest(error.errors?.[0]?.message || error.issues?.[0]?.message || 'Validation error'));
       } else {
         next(error);
       }

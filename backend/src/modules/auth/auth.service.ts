@@ -22,7 +22,7 @@ const toCircleUser = (user: any): CircleUser => ({
 });
 
 // In-memory store for OTPs (TODO: Move to Redis or DB later)
-const otpStore = new Map<string, { code: string; expiresAt: number }>();
+export const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
 export const authService = {
   async signUp(data: SignUpInput): Promise<AuthSession> {
@@ -70,7 +70,11 @@ export const authService = {
     // OTP verified, remove from store
     otpStore.delete(phoneNumber);
 
-    const user = await prisma.user.findUnique({ where: { phoneNumber } });
+    const user = await prisma.user.update({
+      where: { phoneNumber },
+      data: { phoneVerified: true }
+    });
+    
     if (!user) {
       throw ApiError.notFound('User not found. Please sign up first.');
     }
