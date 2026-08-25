@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import authRouter from './modules/auth/auth.routes';
+import usersRouter from './modules/users/users.routes';
 import { notFound } from './common/middleware/notFound';
 import { errorHandler } from './common/middleware/errorHandler';
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(pinoHttp());
 
 app.use('/auth', authRouter);
+app.use('/users', usersRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
