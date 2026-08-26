@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { listingsController } from './listings.controller';
+import { reviewsController } from '../reviews/reviews.controller';
 import { authGuard } from '../../common/middleware/authGuard';
 import { optionalAuth } from '../../common/middleware/optionalAuth';
 
@@ -51,5 +52,6 @@ router.get('/:id/availability', listingsController.getListingAvailability);
 router.post('/', authGuard, handleUploadError, listingsController.createListing);
 router.put('/:id', authGuard, handleUploadError, listingsController.updateListing);
 router.delete('/:id', authGuard, listingsController.deleteListing);
+router.post('/:id/reviews', authGuard, reviewsController.createReview);
 
 export default router;

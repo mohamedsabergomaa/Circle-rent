@@ -190,8 +190,24 @@ export class ListingsService {
       throw ApiError.notFound('Listing not found');
     }
 
-    // TODO: Replace with real Review model query once Reviews module exists
-    return [];
+    const reviews = await prisma.review.findMany({
+      where: { listingId },
+      include: {
+        author: { select: { fullName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return reviews.map((review) => ({
+      id: review.id,
+      authorName: review.author.fullName,
+      authorInitial: review.author.fullName.charAt(0).toUpperCase(),
+      rating: review.rating,
+      text: review.text,
+      hasPhoto: !!review.photoUrl,
+      photoUrl: review.photoUrl,
+      createdAt: review.createdAt.toISOString(),
+    }));
   }
 
   /**
