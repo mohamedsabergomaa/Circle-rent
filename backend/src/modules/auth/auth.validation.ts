@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const signUpSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
   phoneNumber: z.string().min(1, 'Phone number is required').regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format'),
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string().email('Invalid email address'),
 });
 
 export const signInSchema = z.object({

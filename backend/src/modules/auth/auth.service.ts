@@ -2,6 +2,7 @@ import { ApiError } from '../../common/errors/ApiError';
 import { generateToken } from '../../common/config/jwt';
 import { CircleUser, AuthSession, SignUpInput, OnboardingInput } from './auth.types';
 import { prisma } from '../../common/config/prisma';
+import { resend } from '../../common/config/resend';
 
 const toCircleUser = (user: any): CircleUser => ({
   id: user.id,
@@ -51,13 +52,40 @@ export const authService = {
   },
 
   async sendOtp(phoneNumber: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { phoneNumber } });
+    if (!user) {
+      throw ApiError.notFound('User not found. Please sign up first.');
+    }
+    if (!user.email) {
+      throw ApiError.badRequest('No email on file for this user');
+    }
+
     const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit code
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes expiry
 
     otpStore.set(phoneNumber, { code, expiresAt });
     
-    // Stub for actual SMS sending
+    // Fallback console log for dev
     console.log(`[STUB] OTP for ${phoneNumber} is: ${code}`);
+
+    try {
+      await resend.emails.send({
+        from: 'Circle <onboarding@resend.dev>',
+        to: user.email,
+        subject: 'Your Circle verification code',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2>Welcome to Circle</h2>
+            <p>Your verification code is:</p>
+            <h1 style="font-size: 32px; letter-spacing: 4px; color: #333;">${code}</h1>
+            <p style="color: #666; font-size: 14px;">This code expires in 5 minutes.</p>
+          </div>
+        `
+      });
+    } catch (error) {
+      console.error('Failed to send OTP email via Resend:', error);
+      // We don't throw the error so the request doesn't crash, allowing the fallback log to be used
+    }
   },
 
   async verifyOtp(phoneNumber: string, code: string): Promise<AuthSession> {
