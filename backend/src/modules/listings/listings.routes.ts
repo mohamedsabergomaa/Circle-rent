@@ -51,6 +51,7 @@ router.get('/:id/availability', listingsController.getListingAvailability);
 // Protected routes
 router.post('/', authGuard, handleUploadError, listingsController.createListing);
 router.put('/:id', authGuard, handleUploadError, listingsController.updateListing);
+router.put('/:id/submit', authGuard, listingsController.submitListing);
 router.delete('/:id', authGuard, listingsController.deleteListing);
 router.post('/:id/reviews', authGuard, reviewsController.createReview);
 

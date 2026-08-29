@@ -116,6 +116,19 @@ export class ListingsController {
     }
   }
 
+  async submitListing(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      // @ts-ignore - req.user set by authGuard
+      const ownerId = req.user.userId;
+
+      const result = await listingsService.submitListing(id, ownerId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async deleteListing(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;

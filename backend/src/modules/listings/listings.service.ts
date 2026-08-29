@@ -317,6 +317,34 @@ export class ListingsService {
   }
 
   /**
+   * Submit a listing for review.
+   * Transitions a DRAFT listing to PENDING_REVIEW.
+   */
+  async submitListing(id: string, ownerId: string) {
+    const listing = await prisma.listing.findUnique({ where: { id } });
+
+    if (!listing) {
+      throw ApiError.notFound('Listing not found');
+    }
+
+    if (listing.ownerId !== ownerId) {
+      throw ApiError.forbidden('Not authorized to submit this listing');
+    }
+
+    if (listing.status !== ListingStatus.DRAFT) {
+      throw ApiError.badRequest(`Cannot submit a listing with status "${listing.status}". Only DRAFT listings can be submitted.`);
+    }
+
+    const updated = await prisma.listing.update({
+      where: { id },
+      data: { status: ListingStatus.PENDING_REVIEW },
+      include: { owner: { select: { fullName: true } } },
+    });
+
+    return toOwnerListing(updated);
+  }
+
+  /**
    * Delete a listing. Only the owner can delete.
    *
    * ⚠️ DESIGN DECISION: This is a HARD DELETE.

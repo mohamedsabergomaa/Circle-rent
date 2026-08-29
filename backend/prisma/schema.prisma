@@ -23,10 +23,11 @@ enum BookingStatus {
 }
 
 enum ListingStatus {
-  ACTIVE   @map("نشط")
-  PAUSED   @map("موقوف مؤقتًا")
-  DRAFT    @map("مسودة")
-  ARCHIVED @map("مؤرشف")
+  ACTIVE         @map("نشط")
+  PAUSED         @map("موقوف مؤقتًا")
+  DRAFT          @map("مسودة")
+  PENDING_REVIEW @map("قيد المراجعة")
+  ARCHIVED       @map("مؤرشف")
 }
 
 enum MessageSender {
@@ -55,6 +56,7 @@ model User {
   preferredLanguage    Language @default(ar)
   phoneVerified        Boolean  @default(false)
   identityVerified     Boolean  @default(false)
+  isAdmin              Boolean  @default(false)
   onboardingCompleted  Boolean  @default(false)
   
   // Verification documents
@@ -96,6 +98,7 @@ model Listing {
   deposit      Decimal?      @db.Decimal(10, 2)
   deliveryFee  Decimal?      @db.Decimal(10, 2)
   blockedDates String[]      // Expected format: YYYY-MM-DD
+  rejectionReason String?
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

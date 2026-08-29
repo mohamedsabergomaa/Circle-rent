@@ -9,6 +9,8 @@ import bookingsRouter from './modules/bookings/bookings.routes';
 import messagingRouter from './modules/messaging/messaging.routes';
 import favoritesRouter from './modules/favorites/favorites.routes';
 import savedSearchesRouter from './modules/saved-searches/saved-searches.routes';
+import dashboardRouter from './modules/dashboard/dashboard.routes';
+import adminRouter from './modules/admin/admin.routes';
 import { notFound } from './common/middleware/notFound';
 import { errorHandler } from './common/middleware/errorHandler';
 
@@ -26,6 +28,8 @@ app.use('/bookings', bookingsRouter);
 app.use('/conversations', messagingRouter);
 app.use('/favorites', favoritesRouter);
 app.use('/saved-searches', savedSearchesRouter);
+app.use('/dashboard', dashboardRouter);
+app.use('/admin', adminRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
