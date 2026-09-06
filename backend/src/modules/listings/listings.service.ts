@@ -170,6 +170,7 @@ export class ListingsService {
       condition: listing.condition,
       included: listing.included,
       ownerCity: listing.owner?.city || 'N/A',
+      ownerId: listing.ownerId,
       status: listing.status,
       weeklyPrice: listing.weeklyPrice?.toString() || '0',
       monthlyPrice: listing.monthlyPrice?.toString() || '0',

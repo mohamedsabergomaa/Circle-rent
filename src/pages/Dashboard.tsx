@@ -56,26 +56,7 @@ type RentalRequest = {
 const image = (id: string) => `https://images.unsplash.com/photo-${id}?w=960&h=720&fit=crop&auto=format`
 const sampleDates = ['١٨ أغسطس', '١٩ أغسطس', '٢٠ أغسطس', '٢١ أغسطس', '٢٢ أغسطس', '٢٣ أغسطس', '٢٤ أغسطس']
 
-const initialListings: DashboardListing[] = [
-  {
-    id: 'fy1', name: 'كاميرا سوني ألفا', category: 'تصوير فوتوغرافي', price: '٣٠٠', city: 'القاهرة', image: image('1516035069371-29a1b244cc32'), owner: 'أنا', rating: '٤٫٩', verified: true,
-    description: 'كاميرا احترافية بحالة ممتازة، مناسبة للتصوير الفوتوغرافي وصناعة المحتوى.', condition: 'ممتازة', included: ['بطارية إضافية', 'حقيبة حماية'], features: ['عدسة 24–70 مم', 'تصوير 4K', 'واي فاي'], photos: [image('1516035069371-29a1b244cc32'), image('1516035069371-29a1b244cc32')], status: 'نشط', weeklyPrice: '١٬٨٠٠', monthlyPrice: '٦٬٥٠٠', deposit: '١٬٥٠٠', deliveryFee: '٦٠', blockedDates: ['٢٠ أغسطس'],
-  },
-  {
-    id: 'fy2', name: 'مثقاب كهربائي ديوالت', category: 'عُدد وأدوات', price: '١٠٠', city: 'الجيزة', image: image('1572981779307-38b8cabb2407'), owner: 'أنا', rating: '٤٫٧',
-    description: 'مثقاب قوي للأعمال المنزلية والاحترافية، مع حقيبة وملحقات أساسية.', condition: 'جيدة جدًا', included: ['رؤوس حفر متنوعة'], features: ['بطارية قابلة للشحن', 'سرعتان'], photos: [image('1572981779307-38b8cabb2407')], status: 'نشط', weeklyPrice: '٦٠٠', monthlyPrice: '٢٬٠٠٠', deposit: '٥٠٠', deliveryFee: '٤٠', blockedDates: ['٢١ أغسطس', '٢٢ أغسطس'],
-  },
-  {
-    id: 'fy3', name: 'بلايستيشن ٥', category: 'ألعاب وترفيه', price: '٢٥٠', city: 'القاهرة', image: image('1607853202273-797f1c22a38e'), owner: 'أنا', rating: '٥٫٠', verified: true,
-    description: 'نسخة رقمية مع يد تحكم إضافية وعدد من الألعاب المناسبة للجلسات.', condition: 'ممتازة', included: ['يدان تحكم', 'كابل HDMI'], features: ['سعة 825GB', 'يد تحكم إضافية'], photos: [image('1607853202273-797f1c22a38e')], status: 'موقوف مؤقتًا', weeklyPrice: '١٬٤٠٠', monthlyPrice: '٥٬٠٠٠', deposit: '١٬٠٠٠', deliveryFee: '٥٠', blockedDates: [],
-  },
-]
 
-const initialRequests: RentalRequest[] = [
-  { id: 'r1', renter: 'سارة أحمد', product: 'كاميرا سوني ألفا', dates: '١٨–٢٠ أغسطس', total: '٩٢٥ ج.م', status: 'جديد', avatar: 'س' },
-  { id: 'r2', renter: 'عمر خالد', product: 'مثقاب كهربائي ديوالت', dates: '٢١–٢٤ أغسطس', total: '٤٦٥ ج.م', status: 'جديد', avatar: 'ع' },
-  { id: 'r3', renter: 'ندى محمود', product: 'بلايستيشن ٥', dates: '١٤–١٦ أغسطس', total: '٧٧٥ ج.م', status: 'مكتمل', avatar: 'ن' },
-]
 
 const statusStyles: Record<ListingStatus | RequestStatus, string> = {
   'نشط': 'bg-green/10 text-green',
@@ -95,10 +76,14 @@ const emptyListing = (): DashboardListing => ({
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'listings' | 'requests' | 'calendar' | 'inbox' | 'earnings' | 'reviews' | 'settings'>('overview')
-  const [listings, setListings] = useState<DashboardListing[]>(initialListings)
-  const [requests, setRequests] = useState<RentalRequest[]>(initialRequests)
+  const [listings, setListings] = useState<DashboardListing[]>([])
+  const [requests, setRequests] = useState<RentalRequest[]>([])
+  const [ownerSummary, setOwnerSummary] = useState<any>(null)
 
   useEffect(() => {
+    import('../services/dashboard').then(({ getOwnerSummary }) => {
+      getOwnerSummary().then(setOwnerSummary).catch(() => {})
+    })
     import('../services/listings').then(({ getOwnerListings }) => {
       getOwnerListings().then(data => setListings(data as unknown as DashboardListing[])).catch(() => {})
     })
@@ -193,12 +178,12 @@ export default function Dashboard() {
         <div className="grid gap-7 lg:grid-cols-[1.3fr_.7fr] lg:items-end">
           <div>
             <p className="text-sm font-semibold text-cream/70">ملخص هذا الشهر</p>
-            <h2 className="mt-2 text-3xl font-black sm:text-4xl">١٢٬٤٥٠ <span className="text-lg font-bold text-amber">ج.م</span></h2>
+            <h2 className="mt-2 text-3xl font-black sm:text-4xl">{ownerSummary?.totalRevenue ? Number(ownerSummary.totalRevenue).toLocaleString('ar-EG') : '٠'} <span className="text-lg font-bold text-amber">ج.م</span></h2>
             <p className="mt-2 text-sm leading-6 text-cream/80">إيراداتك زادت ١٨٪ عن الشهر السابق. لديك {pendingCount} طلبات تحتاج قرارك.</p>
             <button onClick={() => setActiveTab('requests')} className="mt-5 inline-flex items-center gap-2 rounded-full bg-cream px-4 py-2.5 text-sm font-bold text-brand transition hover:bg-white"><Bell size={16} /> مراجعة الطلبات</button>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {[['إعلانات نشطة', `${activeCount}`], ['نسبة القبول', '٩٢٪'], ['متوسط التقييم', '٤٫٩'], ['أيام محجوزة', '١٨']].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/15 bg-white/10 p-4"><p className="text-xs text-cream/65">{label}</p><strong className="mt-1 block text-xl">{value}</strong></div>)}
+            {[['إعلانات نشطة', `${activeCount}`], ['نسبة القبول', '٩٢٪'], ['متوسط التقييم', '٤٫٩'], ['طلبات مكتملة', `${ownerSummary?.completedBookings || 0}`]].map(([label, value]) => <div key={label} className="rounded-2xl border border-white/15 bg-white/10 p-4"><p className="text-xs text-cream/65">{label}</p><strong className="mt-1 block text-xl">{value}</strong></div>)}
           </div>
         </div>
       </section>

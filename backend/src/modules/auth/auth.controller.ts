@@ -8,6 +8,7 @@ export const authController = {
     try {
       const parsedData = signUpSchema.parse(req.body);
       const result = await authService.signUp(parsedData);
+      await authService.sendOtp(parsedData.phoneNumber);
       res.status(201).json(result);
     } catch (error: any) {
       if (error.name === 'ZodError') {
@@ -75,8 +76,10 @@ export const authController = {
         throw ApiError.unauthorized();
       }
       const parsedData = onboardingSchema.parse(req.body);
-      const result = await authService.completeOnboarding(userId, parsedData);
-      res.json(result);
+      const user = await authService.completeOnboarding(userId, parsedData);
+      const { generateToken } = require('../../common/config/jwt');
+      const token = generateToken({ userId: user.id });
+      res.json({ user, token });
     } catch (error: any) {
       if (error.name === 'ZodError') {
         next(ApiError.badRequest(error.errors?.[0]?.message || error.issues?.[0]?.message || 'Validation error'));

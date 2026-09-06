@@ -1,11 +1,13 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import {
   ArrowLeft, CalendarDays, Check, CheckCircle2, ChevronRight, CreditCard,
   Landmark, LockKeyhole, MapPin, PackageCheck, ShieldCheck, Smartphone, Truck, WalletCards,
+  LoaderCircle
 } from 'lucide-react'
-import { Header } from '../App'
+import { Header, type Listing } from '../App'
 import { createBooking } from '../services/bookings'
+import { getListing } from '../services/listings'
 
 const number = (value: number) => value.toLocaleString('ar-SA')
 type Method = 'mada' | 'card' | 'apple'
@@ -26,22 +28,38 @@ export default function Checkout() {
   const [cardNumber, setCardNumber] = useState('')
   const [error, setError] = useState('')
   const [orderId, setOrderId] = useState('')
+  const [listing, setListing] = useState<(Listing & { ownerCity: string }) | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [fetchError, setFetchError] = useState('')
 
   const listingId = params.get('listing') ?? ''
-  const listingName = params.get('item') ?? ''
-  const listingImage = params.get('image') ?? ''
-  const listingCity = params.get('city') ?? ''
-  const ownerName = params.get('owner') ?? ''
-  const dailyPrice = Number(params.get('dailyPrice') ?? 0)
   const start = params.get('start') ?? ''
   const end = params.get('end') ?? ''
-  const days = Number(params.get('days') ?? 1)
   const delivery = params.get('delivery') === '1'
+
+  useEffect(() => {
+    if (!listingId) {
+      setFetchError('رقم الإعلان مفقود.')
+      setIsLoading(false)
+      return
+    }
+    setIsLoading(true)
+    getListing(listingId)
+      .then(data => setListing(data))
+      .catch(() => setFetchError('تعذّر تحميل بيانات الإعلان. قد يكون محذوفًا أو غير متاح.'))
+      .finally(() => setIsLoading(false))
+  }, [listingId])
+
+  // DISPLAY-ONLY calculations
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const days = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000))
+  const dailyPrice = listing ? Number(listing.price) : 0
+  const deliveryFee = delivery && listing && listing.deliveryFee ? Number(listing.deliveryFee) : 0
   const rental = dailyPrice * days
-  const serviceFee = 25
-  const deliveryFee = delivery ? 60 : 0
-  const deposit = 500
-  const total = rental + serviceFee + deliveryFee + deposit
+  const total = rental + deliveryFee
+
+  const [finalTotal, setFinalTotal] = useState(0)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -51,13 +69,44 @@ export default function Checkout() {
     }
     setError('')
     setStage('processing')
-    createBooking({ listingId, listingName, listingImage, ownerName, start, end, days, total, delivery })
-      .then(booking => { setOrderId(booking.id); setStage('success') })
+    createBooking({ listingId, start, end, delivery })
+      .then(booking => { 
+        setOrderId(booking.id); 
+        setFinalTotal(booking.total);
+        setStage('success'); 
+      })
       .catch(err => { setError(err instanceof Error ? err.message : 'تعذّر إتمام الحجز.'); setStage('form') })
   }
 
+  if (isLoading) {
+    return (
+      <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
+        <Header />
+        <main className="mx-auto flex max-w-6xl items-center justify-center py-32 text-brand">
+          <LoaderCircle size={32} className="animate-spin" />
+        </main>
+      </div>
+    )
+  }
+
+  if (fetchError || !listing) {
+    return (
+      <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
+        <Header />
+        <main className="mx-auto max-w-6xl px-5 py-24 text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-rose/10 text-rose">
+            <CheckCircle2 size={30} />
+          </div>
+          <h1 className="mt-5 text-2xl font-black text-ink">تعذّر المتابعة</h1>
+          <p className="mt-3 text-ink/60">{fetchError || 'لم يتم العثور على الإعلان'}</p>
+          <Link to="/" className="mt-8 inline-block rounded-full bg-brand px-6 py-3 text-sm font-bold text-cream hover:bg-[#4a2650]">العودة للرئيسية</Link>
+        </main>
+      </div>
+    )
+  }
+
   if (stage === 'success') {
-    return <SuccessScreen listingName={listingName} total={total} orderId={orderId} onHome={() => navigate('/')} />
+    return <SuccessScreen listingName={listing.name} total={finalTotal} orderId={orderId} onHome={() => navigate('/')} />
   }
 
   return (
@@ -118,20 +167,18 @@ export default function Checkout() {
 
           <aside className="space-y-4 lg:sticky lg:top-28">
             <section className="overflow-hidden rounded-[1.6rem] border border-line bg-white">
-              <img src={listingImage} alt={listingName} className="h-40 w-full bg-brand-soft object-cover" />
+              <img src={listing.image} alt={listing.name} className="h-40 w-full bg-brand-soft object-cover" />
               <div className="p-5">
                 <p className="text-xs font-bold text-brand">ملخص الحجز</p>
-                <h2 className="mt-2 text-lg font-black text-ink">{listingName}</h2>
+                <h2 className="mt-2 text-lg font-black text-ink">{listing.name}</h2>
                 <div className="mt-5 space-y-3 border-y border-line py-4 text-sm text-ink/65">
                   <div className="flex items-center gap-2"><CalendarDays size={17} className="text-brand" /><span>{start} — {end} · {number(days)} أيام</span></div>
-                  {listingCity && <div className="flex items-center gap-2"><MapPin size={17} className="text-brand" /><span>{listingCity}</span></div>}
+                  {listing.city && <div className="flex items-center gap-2"><MapPin size={17} className="text-brand" /><span>{listing.city}</span></div>}
                   <div className="flex items-center gap-2"><Truck size={17} className="text-brand" /><span>{delivery ? 'توصيل إلى موقعك' : 'استلام من المالك'}</span></div>
                 </div>
                 <div className="mt-4 space-y-2.5 text-sm">
                   <Price label={`الإيجار · ${number(days)} أيام`} value={`${number(rental)} ر.س`} />
-                  <Price label="رسوم الخدمة" value={`${number(serviceFee)} ر.س`} />
                   <Price label="التوصيل" value={delivery ? `${number(deliveryFee)} ر.س` : '—'} />
-                  <Price label="تأمين مسترد" value={`${number(deposit)} ر.س`} accent />
                   <div className="flex items-center justify-between border-t border-line pt-3 text-base font-black text-ink"><span>الإجمالي اليوم</span><span>{number(total)} ر.س</span></div>
                 </div>
               </div>

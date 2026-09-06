@@ -1,7 +1,12 @@
 import { api } from '../lib/api'
 import type { BookingStatus, MockBooking } from '../types'
 
-export type CreateBookingInput = Omit<MockBooking, 'id' | 'createdAt' | 'status' | 'pickupCode' | 'returnCode'>
+export type CreateBookingInput = {
+  listingId: string;
+  start: string;
+  end: string;
+  delivery: boolean;
+}
 
 export async function getMyBookings(): Promise<MockBooking[]> {
   return api<MockBooking[]>('/bookings?role=renter')

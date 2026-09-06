@@ -33,7 +33,7 @@ function toMockBooking(booking: any) {
     id: booking.id,
     listingId: booking.listingId,
     listingName: booking.listing?.name || '',
-    listingImage: booking.listing?.image || '',
+    listingImage: booking.listing?.photos?.[0] || '',
     ownerName: booking.listing?.owner?.fullName || '',
     start: booking.start.toISOString(),
     end: booking.end.toISOString(),

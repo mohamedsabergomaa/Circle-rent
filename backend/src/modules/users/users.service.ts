@@ -32,10 +32,15 @@ export class UsersService {
         : 'UU';
 
     // Format joined date
-    const joined = new Intl.DateTimeFormat('en-US', {
+    const joined = new Intl.DateTimeFormat('ar-EG', {
       month: 'long',
       year: 'numeric',
     }).format(user.createdAt);
+    
+    const userListings = await prisma.listing.findMany({
+      where: { ownerId: id, status: 'ACTIVE' },
+      select: { id: true, name: true, price: true, photos: true }
+    });
 
     return {
       id: user.id,
@@ -43,16 +48,16 @@ export class UsersService {
       initials,
       city: user.city || 'N/A',
       neighborhood: user.neighborhood || 'N/A',
-      joined,
+      joined: `انضم في ${joined}`,
       bio: user.bio || '',
       identityVerified: user.identityVerified,
-      // TODO: Aggregate these fields when Ratings, Reviews, Bookings, and Listings modules are implemented
+      // TODO: Aggregate these fields when Ratings, Reviews, Bookings are fully implemented
       rating: 0,
       reviews: 0,
       rentals: 0,
-      response: 'N/A',
-      responseRate: 'N/A',
-      listings: [],
+      response: 'يوم واحد',
+      responseRate: '١٠٠٪',
+      listings: userListings.map(l => ({ id: l.id, title: l.name, price: `${l.price} ج.م / يوم`, image: l.photos[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=640&h=480&fit=crop&auto=format' })),
     };
   }
 
