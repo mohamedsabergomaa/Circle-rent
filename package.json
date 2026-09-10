@@ -10,10 +10,7 @@
     "format": "oxfmt"
   },
   "dependencies": {
-    "@prisma/client": "^7.9.1",
-    "dotenv": "^17.4.2",
     "lucide-react": "^1.31.0",
-    "prisma": "^7.9.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^8.3.0"
