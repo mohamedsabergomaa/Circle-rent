@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { ArrowLeft, BadgeCheck, ChevronRight, MapPin, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router'
-import { Logo } from '../Logo'
 
 type AuthLayoutProps = {
   eyebrow: string
@@ -17,9 +16,8 @@ export default function AuthLayout({ eyebrow, title, subtitle, variant, children
   return (
     <div dir="rtl" lang="ar" className="grid min-h-screen bg-cream lg:grid-cols-[1fr_1.04fr]">
       <main className="order-1 flex min-h-screen flex-col bg-cream px-5 py-5 sm:px-10 lg:order-2 lg:px-[clamp(3rem,7vw,8.5rem)] lg:py-9">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <Link to="/" className="group inline-flex items-center gap-1.5 text-xs font-bold text-ink/55 transition hover:text-brand"><ChevronRight size={16} className="transition-transform group-hover:translate-x-0.5" /> العودة للرئيسية</Link>
-          <Link to="/" aria-label="سيركل — الصفحة الرئيسية"><Logo /></Link>
         </div>
         <div className="mx-auto flex w-full max-w-[455px] flex-1 flex-col justify-center py-10 lg:py-14">
           <p className="text-xs font-black tracking-[.12em] text-brand">{eyebrow}</p>
@@ -27,15 +25,15 @@ export default function AuthLayout({ eyebrow, title, subtitle, variant, children
           <p className="mt-4 max-w-md text-[15px] leading-7 text-ink/60">{subtitle}</p>
           <div className="mt-9">{children}</div>
           <p className="mt-7 text-center text-sm leading-6 text-ink/60">{footer}</p>
-          <p className="mt-9 text-center text-xs leading-5 text-ink/42">بالمتابعة، أنت توافق على{' '}<Link to="/policy" className="font-bold text-brand underline underline-offset-2 hover:text-[#4a2650]">الشروط وسياسة الخصوصية</Link>{' '}في سيركل.</p>
+          <p className="mt-9 text-center text-xs leading-5 text-ink/42">بالمتابعة، أنت توافق على{' '}<Link to="/policy" className="font-bold text-brand underline underline-offset-2 hover:text-[#064b32]">الشروط وسياسة الخصوصية</Link>{' '}في سيركل.</p>
         </div>
       </main>
 
       <aside className="relative order-2 hidden overflow-hidden bg-brand p-12 text-cream lg:order-1 lg:flex lg:min-h-screen lg:flex-col">
-        <div className="pointer-events-none absolute -right-16 top-24 h-52 w-52 rotate-12 rounded-[3rem] border border-amber/25 bg-amber/10" />
-        <div className="pointer-events-none absolute -bottom-20 -left-12 h-72 w-72 rounded-full bg-[#D1495B]/20" />
+        <div className="pointer-events-none absolute -right-16 top-16 h-56 w-56 rounded-full border-[2.2rem] border-amber" />
+        <div className="pointer-events-none absolute -bottom-20 -left-12 h-72 w-72 rounded-full bg-brand-soft/15" />
         <div className="relative flex h-full flex-col justify-between">
-          <Link to="/" aria-label="سيركل — الصفحة الرئيسية"><Logo light /></Link>
+
           <section className="max-w-lg">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-cream/90"><Sparkles size={14} className="text-amber" /> مجتمع قريب، أشياء تدور</div>
             <h2 className="editorial-display mt-7 text-5xl leading-[1.16] text-cream">{signUp ? <>أعطِ أغراضك<br />حياةً ثانية.</> : <>كل ما تحتاجه،<br />أقرب مما تتوقع.</>}</h2>
@@ -64,7 +62,7 @@ function ListingPreview() {
 }
 
 export function PhoneField({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: string }) {
-  return <label className="block"><span className="mb-2 block text-sm font-bold text-ink">رقم الجوال</span><div className={`flex overflow-hidden rounded-2xl border bg-white transition ${error ? 'border-rose ring-2 ring-rose/10' : 'border-line focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10'}`} dir="ltr"><input value={value} onChange={event => onChange(event.target.value.replace(/[^0-9+]/g, ''))} inputMode="tel" maxLength={15} placeholder="+201X XXXX XXXX" className="w-full bg-transparent px-4 py-3.5 text-left text-sm font-semibold text-ink outline-none placeholder:text-muted/70" /></div>{error ? <span className="mt-2 block text-xs font-medium text-rose">{error}</span> : <span className="mt-2 block text-xs leading-5 text-ink/50">سنستخدم رقمك لحماية حسابك والتواصل بشأن الحجوزات.</span>}</label>
+  return <label className="block"><span className="mb-2 block text-sm font-bold text-ink">رقم الجوال</span><div className={`flex overflow-hidden rounded-2xl border bg-white transition ${error ? 'border-rose ring-2 ring-rose/10' : 'border-line focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10'}`} dir="ltr"><div className="flex items-center border-r border-line bg-brand-soft px-3 text-sm font-black text-brand">+20</div><input value={value} onChange={event => onChange(event.target.value.replace(/[^0-9]/g, ''))} inputMode="tel" maxLength={10} placeholder="1X XXXX XXXX" className="min-w-0 flex-1 bg-transparent px-4 py-3.5 text-right text-sm font-semibold text-ink outline-none placeholder:text-muted/70" /></div>{error ? <span className="mt-2 block text-xs font-medium text-rose">{error}</span> : <span className="mt-2 block text-xs leading-5 text-ink/50">سنستخدم رقمك لحماية حسابك والتواصل بشأن الحجوزات.</span>}</label>
 }
 
 export function TextField({ label, value, onChange, type = 'text', placeholder, optional = false, error }: { label: string; value: string; onChange: (value: string) => void; type?: string; placeholder: string; optional?: boolean; error?: string }) {
@@ -72,5 +70,5 @@ export function TextField({ label, value, onChange, type = 'text', placeholder, 
 }
 
 export function SubmitButton({ children, loading }: { children: ReactNode; loading?: boolean }) {
-  return <button disabled={loading} type="submit" className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-amber text-sm font-black text-brand transition hover:-translate-y-0.5 hover:bg-[#f7b850] focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60">{children}{!loading && <ArrowLeft size={18} />}</button>
+  return <button disabled={loading} type="submit" className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand text-sm font-black text-cream transition hover:-translate-y-0.5 hover:bg-[#064b32] focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60">{children}{!loading && <ArrowLeft size={18} />}</button>
 }

@@ -1,23 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
-  --color-brand: #5b2e5f;
-  --color-brand-soft: #f3ebf4;
-  --color-amber: #f2a93b;
-  --color-cream: #fbf7f4;
-  --color-green: #3d8c6c;
-  --color-rose: #d1495b;
-  --color-ink: #241726;
-  --color-muted: #8a7d8c;
-  --color-line: #ece3e6;
+  /* Circle brand reference: evergreen trust surfaces + electric orange actions. */
+  --color-brand: #075c3d;
+  --color-brand-soft: #e8f3ed;
+  --color-amber: #f4511e;
+  --color-cream: #fcfbf8;
+  --color-green: #0b6b48;
+  --color-rose: #d94841;
+  --color-ink: #1b2923;
+  --color-muted: #718078;
+  --color-line: #e4e9e5;
 
   --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --font-logo: 'Nunito', 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  --font-editorial: 'Amiri', 'Noto Naskh Arabic', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-editorial: 'Noto Naskh Arabic', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 }
 
 html {
@@ -28,6 +28,7 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background-color: var(--color-cream);
+  direction: rtl;
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -70,7 +71,7 @@ body {
 
 ::selection {
   background: var(--color-amber);
-  color: var(--color-brand);
+  color: white;
 }
 
 /* Shared interaction polish — keep keyboard focus visible across every RTL flow. */
@@ -99,4 +100,25 @@ textarea {
 @media (max-width: 640px) {
   html { scroll-padding-top: 5.5rem; }
   .rail { scroll-snap-type: x mandatory; }
+}
+
+/* The shared Circle surface treatment used by marketplace, account, and policy views. */
+@layer components {
+  .field,
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select,
+  textarea {
+    border-color: color-mix(in srgb, var(--color-brand) 13%, var(--color-line));
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
+  }
+
+  [class~='bg-white'][class~='border-line'][class*='rounded'] {
+    box-shadow: 0 12px 28px -26px rgba(7, 92, 61, 0.42);
+  }
 }

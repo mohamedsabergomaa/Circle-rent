@@ -46,10 +46,8 @@ export async function signOut(): Promise<void> {
 }
 
 export async function completeOnboarding(input: OnboardingInput): Promise<AuthSession> {
-  const session = await api<AuthSession>('/auth/onboarding', {
+  return api<AuthSession>('/auth/onboarding', {
     method: 'PUT',
     body: JSON.stringify(input),
   })
-  saveToken(session.token)
-  return session
 }

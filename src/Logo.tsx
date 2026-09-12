@@ -1,19 +1,13 @@
-import circleLogo from './imports/Gemini_Generated_Image_jw9ka4jw9ka4jw9k.png'
+import circleLogo from "./imports/CIRCLE_logo_rebrand_-_Omar_Awad_1_.png"
 
-export function Logo({ light = false }: { light?: boolean }) {
+export function Logo({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
   return (
-    <div
-      role="img"
-      aria-label="Circle logo"
-      className={`relative h-14 w-28 shrink-0 overflow-hidden transition-transform duration-200 hover:scale-[1.02] sm:w-32 ${
-        light ? 'rounded-2xl bg-white shadow-sm' : ''
-      }`}
-    >
-      <img
-        src={circleLogo}
-        alt="Circle"
-        className="h-full w-full object-contain"
-      />
-    </div>
+    <img
+      src={circleLogo}
+      alt="Circle"
+      className={`shrink-0 object-contain transition-transform duration-200 hover:scale-[1.02] ${
+        compact ? "h-8 w-auto" : "h-10 w-auto"
+      } ${light ? "brightness-0 invert" : ""}`}
+    />
   )
 }
