@@ -11,6 +11,7 @@ export type CircleUser = {
   phoneVerified: boolean
   identityVerified: boolean
   onboardingCompleted: boolean
+  isAdmin: boolean
   memberSince: string
   createdAt: string
   updatedAt: string

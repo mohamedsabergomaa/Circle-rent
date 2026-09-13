@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { RouterProvider, createBrowserRouter, Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Logo } from './Logo'
+import heroBackground from './imports/image-3.png'
 import Login from './pages/Login'
 import PhoneVerification from './pages/PhoneVerification'
 import Onboarding from './pages/Onboarding'
@@ -16,9 +17,10 @@ import CreateListing from './pages/CreateListing'
 import { getSavedSearches, deleteSavedSearch } from './services/savedSearches'
 import type { SavedSearch } from './types'
 import { checkFavorite, addFavorite, removeFavorite } from './services/favorites'
-import { getListings } from './services/listings'
-import { useAuth } from './context/AuthContext'
+import { useAuth, AuthProvider } from './context/AuthContext'
 import SignUp from './pages/SignUp'
+import ForgotPassword from './pages/ForgotPassword'
+import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import Verification, { VerificationPending } from './pages/Verification'
 import AboutPage, { ContactPage, FaqPage, HowItWorksPage, PolicyPage } from './pages/InfoPages'
@@ -56,6 +58,23 @@ import {
   Share2,
   Flag,
   BadgeCheck,
+  Camera,
+  Monitor,
+  Drill,
+  Gamepad2,
+  Car,
+  Music2,
+  Dumbbell,
+  Shirt,
+  BookOpen,
+  PawPrint,
+  Home,
+  Bike,
+  UsersRound,
+  Tags,
+  Headphones,
+  ClipboardCheck,
+  Building2,
 } from 'lucide-react'
 
 export type Listing = {
@@ -66,13 +85,37 @@ export type Listing = {
   city: string
   image: string
   owner: string
-  ownerId?: string
   rating: string
   verified?: boolean
   features?: string[]
-  deliveryFee?: string
 }
 
+const img = (id: string) =>
+  `https://images.unsplash.com/photo-${id}?w=640&h=560&fit=crop&auto=format`
+
+const forYou: Listing[] = [
+  { id: 'fy1', name: 'كاميرا سوني ألفا', category: 'تصوير فوتوغرافي', price: '٣٠٠', city: 'القاهرة', image: img('1516035069371-29a1b244cc32'), owner: 'مروان', rating: '٤٫٩', verified: true },
+  { id: 'fy2', name: 'مثقاب كهربائي ديوالت', category: 'عُدد وأدوات', price: '١٠٠', city: 'الجيزة', image: img('1572981779307-38b8cabb2407'), owner: 'أحمد', rating: '٤٫٧' },
+  { id: 'fy3', name: 'بلايستيشن ٥', category: 'ألعاب وترفيه', price: '٢٥٠', city: 'القاهرة', image: img('1607853202273-797f1c22a38e'), owner: 'يوسف', rating: '٥٫٠', verified: true },
+  { id: 'fy4', name: 'لابتوب ألعاب', category: 'إلكترونيات', price: '٣٥٠', city: 'المعادي', image: img('1603302576837-37561b2e2302'), owner: 'سلمى', rating: '٤٫٨' },
+  { id: 'fy5', name: 'كاميرا مع حامل ثلاثي', category: 'تصوير فوتوغرافي', price: '٢٢٠', city: 'مدينة نصر', image: img('1612548403247-aa2873e9422d'), owner: 'ندى', rating: '٤٫٦' },
+]
+
+const recommended: Listing[] = [
+  { id: 'rc1', name: 'سماعة دي جي', category: 'صوتيات وحفلات', price: '٤٠٠', city: 'الإسكندرية', image: img('1724858103797-6d388eb1006a'), owner: 'كريم', rating: '٤٫٩', verified: true },
+  { id: 'rc2', name: 'دراجة كهربائية', category: 'تنقّل', price: '١٨٠', city: 'الزمالك', image: img('1620802051782-725fa33db067'), owner: 'ليلى', rating: '٤٫٨' },
+  { id: 'rc3', name: 'عدسة كانون', category: 'تصوير فوتوغرافي', price: '٢٥٠', city: 'القاهرة', image: img('1502920917128-1aa500764cbd'), owner: 'هشام', rating: '٤٫٧' },
+  { id: 'rc4', name: 'خلاط عجين احترافي', category: 'أدوات منزلية', price: '١٢٠', city: '٦ أكتوبر', image: img('1758565810987-ca8d617ea7be'), owner: 'منى', rating: '٤٫٥' },
+  { id: 'rc5', name: 'جيتار أكوستيك', category: 'آلات موسيقية', price: '٩٠', city: 'المعادي', image: img('1510915361894-db8b60106cb1'), owner: 'عمر', rating: '٤٫٩', verified: true },
+]
+
+const recent: Listing[] = [
+  { id: 'nw1', name: 'خيمة تخييم', category: 'رحلات وتخييم', price: '١٥٠', city: 'العين السخنة', image: img('1510312305653-8ed496efae75'), owner: 'رنا', rating: '٤٫٨' },
+  { id: 'nw2', name: 'بروجكتر منزلي', category: 'إلكترونيات', price: '٣٠٠', city: 'القاهرة', image: img('1535016120720-40c646be5580'), owner: 'طارق', rating: '٤٫٦', verified: true },
+  { id: 'nw3', name: 'طقم عُدد كهربائية', category: 'عُدد وأدوات', price: '٢٠٠', city: 'الجيزة', image: img('1645651964715-d200ce0939cc'), owner: 'باسم', rating: '٤٫٧' },
+  { id: 'nw4', name: 'سكوتر كهربائي', category: 'تنقّل', price: '١٦٠', city: 'الإسكندرية', image: img('1565300480288-deb407e6ae15'), owner: 'دينا', rating: '٤٫٥' },
+  { id: 'nw5', name: 'تلسكوب فلكي', category: 'هوايات', price: '٢٨٠', city: 'الفيوم', image: img('1609000142140-fb449c139c82'), owner: 'زياد', rating: '٥٫٠', verified: true },
+]
 
 const navItems = [
   { label: 'من نحن', to: '/about' },
@@ -97,7 +140,7 @@ function CountrySelect({ compact = false }: { compact?: boolean }) {
         <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <ul className="absolute left-0 top-11 z-40 w-40 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-[0_16px_40px_-24px_rgba(91,46,95,0.5)]">
+        <ul className="absolute left-0 top-11 z-40 w-40 overflow-hidden rounded-xl border border-line bg-white py-1 shadow-[0_16px_40px_-24px_rgba(7,92,61,0.26)]">
           {countries.map((c) => (
             <li key={c}>
               <button
@@ -137,8 +180,8 @@ function AccountMenu() {
     <button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} aria-controls="account-menu" aria-label="فتح قائمة الحساب" className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-line bg-white text-brand shadow-sm transition hover:border-brand hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand/25">
       {user?.avatarUrl ? <img src={user.avatarUrl} alt="صورة الملف الشخصي" className="h-full w-full object-cover" /> : user ? <span className="text-sm font-black">{user.fullName.charAt(0)}</span> : <Menu size={20} strokeWidth={2.25} />}
     </button>
-    {open && <div id="account-menu" className="absolute left-0 top-[calc(100%+0.65rem)] z-50 w-72 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_45px_-18px_rgba(36,23,38,0.32)]">
-      {user ? <><div className="flex items-center gap-3 bg-brand-soft/60 px-4 py-4"><div className="grid h-11 w-11 place-items-center rounded-full bg-brand text-sm font-black text-cream">{user.fullName.charAt(0)}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-ink">{user.fullName}</p><p className="mt-0.5 text-xs text-muted">{user.city ?? 'عضو في سيركل'}</p></div></div><div className="p-2"><Link to="/profile" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><UserRound size={18} className="text-brand" /> ملفي الشخصي</Link><Link to="/dashboard" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><LayoutDashboard size={18} className="text-brand" /> لوحة التحكم</Link><Link to="/dashboard/bookings" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><PackageCheck size={18} className="text-brand" /> حجوزات إعلاناتي</Link><Link to="/my-bookings" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><CalendarDays size={18} className="text-brand" /> حجوزاتي</Link><Link to="/messages" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><MessageCircle size={18} className="text-brand" /> الرسائل</Link><Link to="/favorites" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><Heart size={18} className="text-brand" /> المفضلة</Link><Link to="/saved-searches" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><Search size={18} className="text-brand" /> عمليات البحث المحفوظة</Link></div><div className="border-t border-line p-2"><button type="button" onClick={leave} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm font-medium text-rose transition hover:bg-rose/10"><LogOut size={18} /> تسجيل الخروج</button></div></> : <><div className="bg-brand-soft/60 px-4 py-4"><p className="text-sm font-bold text-ink">مرحبًا بك في سيركل</p><p className="mt-0.5 text-xs text-muted">سجّل الدخول لإدارة حسابك وحجوزاتك.</p></div><div className="p-2"><Link to="/login" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand transition hover:bg-brand-soft"><LogIn size={18} /> تسجيل الدخول</Link><Link to="/signup" onClick={closeMenu} className="mt-1 flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-cream transition hover:bg-[#4a2650]"><UserPlus size={18} /> إنشاء حساب</Link></div></>}
+    {open && <div id="account-menu" className="absolute left-0 top-[calc(100%+0.65rem)] z-50 w-72 overflow-hidden rounded-2xl border border-line bg-white shadow-[0_18px_45px_-18px_rgba(27,41,35,0.18)]">
+      {user ? <><div className="flex items-center gap-3 bg-brand-soft/60 px-4 py-4"><div className="grid h-11 w-11 place-items-center rounded-full bg-brand text-sm font-black text-cream">{user.fullName.charAt(0)}</div><div className="min-w-0"><p className="truncate text-sm font-bold text-ink">{user.fullName}</p><p className="mt-0.5 text-xs text-muted">{user.city ?? 'عضو في سيركل'}</p></div></div><div className="p-2"><Link to="/profile" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><UserRound size={18} className="text-brand" /> ملفي الشخصي</Link><Link to="/dashboard" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><LayoutDashboard size={18} className="text-brand" /> لوحة التحكم</Link><Link to="/dashboard/bookings" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><PackageCheck size={18} className="text-brand" /> حجوزات إعلاناتي</Link><Link to="/my-bookings" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><CalendarDays size={18} className="text-brand" /> حجوزاتي</Link><Link to="/messages" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><MessageCircle size={18} className="text-brand" /> الرسائل</Link><Link to="/favorites" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><Heart size={18} className="text-brand" /> المفضلة</Link><Link to="/saved-searches" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink transition hover:bg-brand-soft hover:text-brand"><Search size={18} className="text-brand" /> عمليات البحث المحفوظة</Link></div><div className="border-t border-line p-2"><button type="button" onClick={leave} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-right text-sm font-medium text-rose transition hover:bg-rose/10"><LogOut size={18} /> تسجيل الخروج</button></div></> : <><div className="bg-brand-soft/60 px-4 py-4"><p className="text-sm font-bold text-ink">مرحبًا بك في سيركل</p><p className="mt-0.5 text-xs text-muted">سجّل الدخول لإدارة حسابك وحجوزاتك.</p></div><div className="p-2"><Link to="/login" onClick={closeMenu} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-brand transition hover:bg-brand-soft"><LogIn size={18} /> تسجيل الدخول</Link><Link to="/signup" onClick={closeMenu} className="mt-1 flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 text-sm font-semibold text-cream transition hover:bg-[#064b32]"><UserPlus size={18} /> إنشاء حساب</Link></div></>}
     </div>}
   </div>
 }
@@ -149,8 +192,8 @@ export function Header() {
     <header className="sticky top-0 z-30 bg-cream/85 backdrop-blur-md">
       {/* Upper bar: logo + country + profile */}
       <div className="border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link to="/"><Logo /></Link>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-2">
+          <Link to="/"><Logo compact /></Link>
           <div className="flex items-center gap-3">
             <CountrySelect />
             <AccountMenu />
@@ -159,23 +202,23 @@ export function Header() {
       </div>
 
       {/* Lower bar: navigation links + CTA */}
-      <div className="border-b border-brand bg-brand">
+      <div className="border-b border-line bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5">
           <nav className="hidden items-center gap-8 md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="border-b-2 border-transparent py-3.5 text-sm font-medium text-cream/80 transition-colors hover:border-amber hover:text-amber"
+                className="border-b-2 border-transparent py-3.5 text-sm font-semibold text-ink/75 transition-colors hover:border-amber hover:text-brand"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
-          <Link to="/create-listing" className="my-2 hidden rounded-full bg-amber px-5 py-2 text-sm font-semibold text-brand transition-colors hover:bg-[#ffc468] md:inline-block">أضِف إعلانك</Link>
+          <Link to="/create-listing" className="my-2 hidden rounded-full bg-brand px-5 py-2 text-sm font-bold text-cream shadow-[0_8px_18px_-10px_rgba(7,92,61,0.45)] transition-colors hover:bg-[#064b32] md:inline-block">أضِف إعلانك</Link>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="my-2 flex items-center gap-2 rounded-full border border-cream/30 px-4 py-2 text-sm font-medium text-cream md:hidden"
+            className="my-2 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-brand md:hidden"
             aria-label="القائمة"
           >
             {open ? <X size={18} /> : <Menu size={18} />}
@@ -185,15 +228,16 @@ export function Header() {
       </div>
 
       {/* Third bar: category tags */}
-      <div className="border-b border-brand/30 bg-brand">
-        <div className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto scrollbar-none px-5 py-2">
-          {categoryNav.map(({ label }) => (
+      <div className="border-b border-brand/20 bg-brand shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-0.5 overflow-x-auto scrollbar-none px-3 py-1.5 sm:px-5">
+          {categoryNav.map(({ label, icon: Icon }) => (
             <Link
               key={label}
               to={`/search?category=${encodeURIComponent(label)}`}
-              className="inline-flex shrink-0 items-center rounded-full px-3.5 py-1.5 text-xs font-semibold text-cream/70 transition-colors hover:bg-white/15 hover:text-cream"
+              className="group inline-flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1 text-[10px] font-semibold text-cream/75 transition-colors hover:bg-white/10 hover:text-cream"
             >
-              {label}
+              <Icon size={18} strokeWidth={1.8} className="text-cream transition-transform group-hover:-translate-y-0.5" />
+              <span className="whitespace-nowrap">{label}</span>
             </Link>
           ))}
         </div>
@@ -206,7 +250,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Link to="/create-listing" onClick={() => setOpen(false)} className="mt-2 rounded-full bg-amber px-5 py-2.5 text-center text-sm font-semibold text-brand">أضِف إعلانك</Link>
+          <Link to="/create-listing" onClick={() => setOpen(false)} className="mt-2 rounded-full bg-brand px-5 py-2.5 text-center text-sm font-semibold text-cream">أضِف إعلانك</Link>
         </nav>
       )}
     </header>
@@ -214,33 +258,20 @@ export function Header() {
 }
 
 const categoryNav = [
-  { label: 'تصوير فوتوغرافي' },
-  { label: 'إلكترونيات' },
-  { label: 'عُدد وأدوات' },
-  { label: 'ألعاب وترفيه' },
-  { label: 'تنقّل' },
-  { label: 'رحلات وتخييم' },
-  { label: 'آلات موسيقية' },
-  { label: 'صوتيات وحفلات' },
-  { label: 'أدوات منزلية' },
-  { label: 'هوايات' },
-  { label: 'ملابس وأزياء' },
-  { label: 'كتب ومراجع' },
-  { label: 'رياضة ولياقة' },
-  { label: 'أجهزة طبية' },
-  { label: 'طباعة وتصميم' },
-  { label: 'معدات بناء' },
-  { label: 'سيارات ومركبات' },
-  { label: 'حفلات وفعاليات' },
-  { label: 'أثاث وديكور' },
-  { label: 'مطبخ وطهي' },
-  { label: 'أطفال وأمومة' },
-  { label: 'حيوانات أليفة' },
-  { label: 'زراعة وحدائق' },
-  { label: 'فنون وحِرف' },
-  { label: 'دراسة وتعليم' },
+  { label: 'تصوير فوتوغرافي', icon: Camera },
+  { label: 'إلكترونيات', icon: Monitor },
+  { label: 'عُدد وأدوات', icon: Drill },
+  { label: 'ألعاب وترفيه', icon: Gamepad2 },
+  { label: 'تنقّل', icon: Bike },
+  { label: 'سيارات ومركبات', icon: Car },
+  { label: 'آلات موسيقية', icon: Music2 },
+  { label: 'رياضة ولياقة', icon: Dumbbell },
+  { label: 'ملابس وأزياء', icon: Shirt },
+  { label: 'كتب ومراجع', icon: BookOpen },
+  { label: 'أدوات منزلية', icon: Home },
+  { label: 'حيوانات أليفة', icon: PawPrint },
+  { label: 'شقق ومنازل', icon: Building2 },
 ]
-
 const rotatingPhrases = [
   'من جارك القريب',
   'دون أن تشتريه',
@@ -253,6 +284,12 @@ function Hero() {
   const navigate = useNavigate()
   const [phraseIndex, setPhraseIndex] = useState(0)
   const [visible, setVisible] = useState(true)
+  const assurances = [
+    [Headphones, 'دعم على مدار الساعة', 'نحن هنا لمساعدتك دائمًا'],
+    [Tags, 'أسعار مناسبة', 'وفّر المال واستأجر بذكاء'],
+    [ShieldCheck, 'معاملات آمنة', 'حماية وخصوصية تامة'],
+    [UsersRound, 'مجتمع موثوق', 'آلاف المستخدمين يثقون بنا'],
+  ]
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -271,92 +308,89 @@ function Hero() {
   }
 
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1553716847-da99c5ded8b2?w=1600&h=1000&fit=crop&auto=format"
-          alt="عدسات كاميرا وأجهزة متاحة للإيجار"
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-cream/45" />
-        <div className="absolute inset-0 bg-gradient-to-b from-cream/30 via-cream/55 to-cream" />
-      </div>
+    <section className="relative isolate -mt-px overflow-hidden bg-[#f7f3ee]">
+      <img
+        src={heroBackground}
+        alt="كاميرا وسماعات ونباتات تمثل تنوع المنتجات المتاحة للإيجار"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[#f7f3ee]/15" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-brand/20 via-brand/5 to-transparent" />
 
-      <div className="relative mx-auto max-w-6xl px-5 pb-14 pt-16 text-center sm:pt-24">
-        <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-[1.25] tracking-tight text-brand sm:text-6xl">
-          استأجر ما تحتاجه.
+      <div className="relative mx-auto max-w-6xl px-5 pt-16 text-center sm:pt-20 lg:min-h-[390px]">
+        <h1 className="mx-auto max-w-3xl text-[2.6rem] font-black leading-[1.18] tracking-tight text-brand sm:text-6xl">
+          استأجر <span className="text-amber">ما تحتاجه.</span>
         </h1>
-        <div className="mt-5 flex justify-center">
-          <span
-            className="inline-flex items-center gap-2.5 rounded-full border border-brand/20 bg-white/90 px-5 py-2.5 shadow-[0_10px_28px_-10px_rgba(91,46,95,0.35)] backdrop-blur-sm transition-all duration-350"
-            style={{
-              opacity: visible ? 1 : 0,
-              transform: visible ? 'translateX(0)' : 'translateX(36px)',
-            }}
-          >
-            <span className="h-2 w-2 shrink-0 rounded-full bg-brand/60" />
-            <span className="text-sm font-semibold tracking-wide text-brand sm:text-base">
-              {rotatingPhrases[phraseIndex]}
-            </span>
-          </span>
-        </div>
-        <p className="mx-auto mt-4 max-w-xl text-base text-ink/70 sm:text-lg">
+        <p className="mx-auto mt-4 max-w-xl text-base font-medium text-ink/75 sm:text-xl">
           اكتشف الأشياء التي يؤجّرها الناس من حولك.
         </p>
+        <span
+          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand/75 transition-all duration-350"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(8px)' }}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-amber" />
+          {rotatingPhrases[phraseIndex]}
+        </span>
 
-        <form onSubmit={handleSearch} className="mx-auto mt-10 max-w-2xl">
-          <div className="flex flex-col gap-2 rounded-3xl border border-line bg-white p-2 shadow-[0_16px_40px_-24px_rgba(91,46,95,0.35)] sm:flex-row sm:items-center sm:rounded-full sm:gap-0">
-            <div className="flex flex-1 items-center gap-3 rounded-2xl px-5 py-3 sm:rounded-full">
-              <Search size={20} className="shrink-0 text-brand" />
-              <input
-                className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
-                placeholder="ماذا تريد أن تستأجر؟"
-              />
+        <form onSubmit={handleSearch} className="relative z-10 mx-auto mt-8 max-w-3xl translate-y-8">
+          <div className="flex flex-col gap-2 rounded-[1.9rem] border border-white bg-white p-2.5 shadow-[0_22px_48px_-22px_rgba(7,92,61,0.35)] sm:flex-row sm:items-center sm:rounded-full sm:gap-0">
+            <div className="flex flex-1 items-center gap-3 px-5 py-3">
+              <Search size={22} className="shrink-0 text-ink" strokeWidth={2} />
+              <input className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none" placeholder="ماذا تريد أن تستأجر؟" />
             </div>
-            <span className="mx-2 hidden h-8 w-px bg-line sm:block" />
-            <div className="flex items-center gap-3 rounded-2xl px-5 py-3 sm:w-52 sm:rounded-full">
-              <MapPin size={20} className="shrink-0 text-brand" />
-              <input
-                className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none"
-                placeholder="الموقع"
-              />
+            <span className="mx-1 hidden h-9 w-px bg-line sm:block" />
+            <div className="flex items-center gap-3 px-5 py-3 sm:w-48">
+              <MapPin size={21} className="shrink-0 text-brand" />
+              <input className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none" placeholder="الموقع" />
             </div>
-            <button
-              type="submit"
-              className="grid h-12 shrink-0 place-items-center rounded-2xl bg-brand px-5 text-cream transition-colors hover:bg-[#4a2650] sm:h-12 sm:w-12 sm:rounded-full sm:px-0"
-              aria-label="بحث"
-            >
-              <Search size={20} />
+            <button type="submit" className="grid h-12 shrink-0 place-items-center rounded-2xl bg-brand px-5 text-white transition-colors hover:bg-[#064b32] sm:h-12 sm:w-12 sm:rounded-full sm:px-0" aria-label="بحث">
+              <Search size={21} />
               <span className="mr-2 text-sm font-semibold sm:hidden">بحث</span>
             </button>
           </div>
         </form>
+      </div>
+
+      <div className="relative mx-auto max-w-6xl px-5 pb-10 pt-16 sm:pb-14">
+        <div className="grid overflow-hidden rounded-2xl bg-brand text-white shadow-[0_18px_35px_-24px_rgba(7,92,61,0.9)] sm:grid-cols-2 lg:grid-cols-4">
+          {assurances.map(([Icon, title, copy], index) => {
+            const AssuranceIcon = Icon as typeof Headphones
+            return (
+              <article key={title as string} className={`flex items-center gap-3 px-5 py-4 ${index ? 'border-t border-white/20 sm:border-r sm:border-t-0' : ''}`}>
+                <AssuranceIcon size={29} strokeWidth={1.65} className="shrink-0 text-white" />
+                <div><h2 className="text-sm font-black">{title as string}</h2><p className="mt-0.5 text-[11px] text-white/70">{copy as string}</p></div>
+              </article>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
 }
 
 function Stripe() {
+  const benefits = [
+    [ClipboardCheck, 'اختر ما يناسبك', 'تصفّح آلاف المنتجات المتاحة'],
+    [MessageCircle, 'تواصل مع المؤجر', 'تفاهم بسهولة وأمان'],
+    [CalendarDays, 'احجز واستلم', 'في الوقت والمكان المناسبين'],
+    [BadgeCheck, 'استمتع وجرّب', 'منتجات مميزة من حولك'],
+    [RotateCcw, 'أعدها بسهولة', 'استلام وإعادة دون تعقيد'],
+  ]
   return (
-    <section className="mx-auto grid max-w-6xl gap-px overflow-hidden rounded-2xl border border-line bg-line px-px sm:grid-cols-3">
-      {[
-        ['١', 'اختَر ما يلائم يومك', 'من كاميرا لرحلة، إلى أدوات لمشروعك.'],
-        ['٢', 'احجز بثقة', 'هوية موثّقة وتواصل واضح قبل الاستلام.'],
-        ['٣', 'أعِد الدائرة', 'استلم، استمتع، ثم أعده في موعده.'],
-      ].map(([number, title, copy]) => (
-        <article key={number} className="bg-cream p-6 sm:p-7">
-          <span className="text-xs font-extrabold text-amber">٠{number}</span>
-          <h2 className="mt-5 text-base font-extrabold text-brand">{title}</h2>
-          <p className="mt-2 max-w-xs text-sm leading-6 text-ink/65">{copy}</p>
-        </article>
-      ))}
+    <section className="relative z-10 mx-auto max-w-6xl px-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {benefits.map(([Icon, title, copy]) => {
+          const BenefitIcon = Icon as typeof ClipboardCheck
+          return <article key={title as string} className="flex items-center gap-3 rounded-xl border border-line bg-white p-4 shadow-[0_10px_22px_-20px_rgba(27,41,35,.45)]"><BenefitIcon size={28} strokeWidth={1.75} className="shrink-0 text-amber" /><div><h2 className="text-sm font-black text-ink">{title as string}</h2><p className="mt-0.5 text-[11px] leading-4 text-muted">{copy as string}</p></div></article>
+        })}
+      </div>
     </section>
   )
 }
 
 function ListingCard({ listing, full = false }: { listing: Listing; full?: boolean }) {
   const [saved, setSaved] = useState(false)
-  useEffect(() => { checkFavorite(listing.id).then(setSaved).catch(console.error) }, [listing.id])
+  useEffect(() => { checkFavorite(listing.id).then(setSaved).catch(() => {}) }, [listing.id])
   const toggleSaved = async () => {
     try {
       if (saved) { await removeFavorite(listing.id); setSaved(false) }
@@ -364,7 +398,7 @@ function ListingCard({ listing, full = false }: { listing: Listing; full?: boole
     } catch (err) { console.error(err) }
   }
   return (
-    <article className={`group ${full ? 'w-full' : 'w-64 shrink-0 snap-start'} overflow-hidden rounded-2xl border border-line bg-white transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-[0_20px_44px_-28px_rgba(91,46,95,0.5)]`}>
+    <article className={`group ${full ? 'w-full' : 'w-64 shrink-0 snap-start'} overflow-hidden rounded-2xl border border-line bg-white transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:shadow-[0_20px_44px_-28px_rgba(7,92,61,0.26)]`}>
       <div className="relative aspect-[4/3] overflow-hidden bg-brand-soft">
         <img
           src={listing.image}
@@ -448,11 +482,11 @@ export function Footer() {
           </p>
           <div className="mt-6 flex gap-3">
             <div className="flex-1 rounded-xl bg-cream/10 p-3">
-              <p className="text-2xl font-bold text-amber">١٢٬٤٠٠+</p>
+              <p className="text-2xl font-bold text-cream">١٢٬٤٠٠+</p>
               <p className="text-[11px] text-cream/60">إعلان نشط</p>
             </div>
             <div className="flex-1 rounded-xl bg-cream/10 p-3">
-              <p className="text-2xl font-bold text-amber">٨٦٠٠+</p>
+              <p className="text-2xl font-bold text-cream">٨٦٠٠+</p>
               <p className="text-[11px] text-cream/60">عملية تأجير</p>
             </div>
           </div>
@@ -475,7 +509,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-cream/70">
             {[['من نحن', '/about'], ['كيف يعمل', '/how-it-works'], ['الأسئلة الشائعة', '/faqs'], ['تواصل معنا', '/contact'], ['الشروط والسياسة', '/policy']].map(([label, to]) => (
               <li key={to}>
-                <Link to={to} className="transition-colors hover:text-amber">{label}</Link>
+                <Link to={to} className="transition-colors hover:text-cream">{label}</Link>
               </li>
             ))}
           </ul>
@@ -486,7 +520,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-cream/70">
             {[['تصفّح المنتجات', '/search'], ['أضِف منتجًا', '/signup'], ['إعلاناتي', '/dashboard'], ['الدعم والمساعدة', '/contact']].map(([label, to]) => (
               <li key={to}>
-                <Link to={to} className="transition-colors hover:text-amber">{label}</Link>
+                <Link to={to} className="transition-colors hover:text-cream">{label}</Link>
               </li>
             ))}
           </ul>
@@ -495,7 +529,7 @@ export function Footer() {
       <div className="border-t border-cream/15">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-6 sm:flex-row sm:justify-between">
           <p className="text-xs text-cream/60">© ٢٠٢٦ سيركل. جميع الحقوق محفوظة.</p>
-          <Link to="/policy" className="text-xs text-cream/50 transition-colors hover:text-amber">الشروط والسياسة</Link>
+          <Link to="/policy" className="text-xs text-cream/50 transition-colors hover:text-cream">الشروط والسياسة</Link>
         </div>
       </div>
     </footer>
@@ -503,34 +537,11 @@ export function Footer() {
 }
 
 function HomePage() {
-  const [forYouData, setForYouData] = useState<Listing[]>([])
-  const [recommendedData, setRecommendedData] = useState<Listing[]>([])
-  const [recentData, setRecentData] = useState<Listing[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    Promise.all([
-      getListings({ limit: 5 }), // forYou
-      getListings({ rating: 4, limit: 5 }), // recommended
-      getListings({ latest: true, limit: 5 }), // recent
-    ]).then(([fy, rec, rct]) => {
-      setForYouData(fy)
-      setRecommendedData(rec)
-      setRecentData(rct)
-    }).catch(err => {
-      console.error('Failed to load listings', err)
-      setError('حدث خطأ أثناء تحميل الإعلانات.')
-    }).finally(() => {
-      setIsLoading(false)
-    })
-  }, [])
-
   return (
     <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
       <Header />
       <Hero />
-      <div className="px-5 pt-8 sm:pt-12">
+      <div className="pt-6 sm:pt-8">
         <Stripe />
       </div>
       <section className="mx-auto max-w-6xl px-5 pt-16 sm:pt-20">
@@ -540,28 +551,9 @@ function HomePage() {
           <Link to="/search" className="inline-flex items-center gap-2 text-sm font-bold text-brand hover:text-rose">استكشف كل المنتجات <ArrowLeft size={17} /></Link>
         </div>
       </section>
-
-      {isLoading ? (
-        <div className="mx-auto max-w-6xl px-5 py-12 text-center text-brand font-bold">
-          جارٍ تحميل الإعلانات...
-        </div>
-      ) : error ? (
-        <div className="mx-auto max-w-6xl px-5 py-12 text-center text-rose font-bold">
-          {error}
-        </div>
-      ) : (
-        <>
-          {forYouData.length > 0 && <ListingRow title="مختارة لك" items={forYouData} />}
-          {recommendedData.length > 0 && <ListingRow title="مقترح لك" items={recommendedData} />}
-          {recentData.length > 0 && <ListingRow title="أُضيف حديثًا" items={recentData} />}
-          {forYouData.length === 0 && recommendedData.length === 0 && recentData.length === 0 && (
-            <div className="mx-auto max-w-6xl px-5 py-12 text-center text-brand font-bold">
-              لا توجد إعلانات متاحة حالياً.
-            </div>
-          )}
-        </>
-      )}
-
+      <ListingRow title="مختارة لك" items={forYou} />
+      <ListingRow title="مقترح لك" items={recommended} />
+      <ListingRow title="أُضيف حديثًا" items={recent} />
       <div className="mx-auto mt-6 max-w-6xl px-5">
         <hr className="border-line" />
       </div>
@@ -570,6 +562,8 @@ function HomePage() {
   )
 }
 
+
+export const allListings = [...forYou, ...recommended, ...recent]
 
 function toNumber(value: string) {
   return Number(
@@ -591,41 +585,20 @@ function SearchResultsPage() {
   const [location, setLocation] = useState(() => searchParams.get('location') ?? 'كل المدن')
   const [latestOnly, setLatestOnly] = useState(() => searchParams.get('latest') === '1')
 
-  const [results, setResults] = useState<Listing[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let priceMin: number | undefined
-    let priceMax: number | undefined
-    if (priceRange === 'under-150') {
-      priceMax = 150
-    } else if (priceRange === '150-250') {
-      priceMin = 150
-      priceMax = 250
-    } else if (priceRange === 'over-250') {
-      priceMin = 250
-    }
-
-    setIsLoading(true)
-    setError('')
-
-    getListings({
-      q: query.trim() || undefined,
-      city: location === 'كل المدن' ? undefined : location,
-      priceMin,
-      priceMax,
-      rating: minimumRating > 0 ? minimumRating : undefined,
-      latest: latestOnly ? true : undefined,
-    }).then(data => {
-      setResults(data)
-    }).catch(err => {
-      console.error('Search failed', err)
-      setError('حدث خطأ أثناء جلب النتائج.')
-    }).finally(() => {
-      setIsLoading(false)
-    })
-  }, [query, priceRange, minimumRating, location, latestOnly])
+  const results = allListings.filter((listing) => {
+    const normalizedQuery = query.trim()
+    const matchesQuery = !normalizedQuery || `${listing.name} ${listing.category}`.includes(normalizedQuery)
+    const price = toNumber(listing.price)
+    const matchesPrice =
+      priceRange === 'any' ||
+      (priceRange === 'under-150' && price < 150) ||
+      (priceRange === '150-250' && price >= 150 && price <= 250) ||
+      (priceRange === 'over-250' && price > 250)
+    const matchesRating = toNumber(listing.rating) >= minimumRating
+    const matchesLocation = location === 'كل المدن' || listing.city === location
+    const matchesLatest = !latestOnly || listing.id.startsWith('nw')
+    return matchesQuery && matchesPrice && matchesRating && matchesLocation && matchesLatest
+  })
 
   const resetFilters = () => {
     setPriceRange('any')
@@ -647,7 +620,7 @@ function SearchResultsPage() {
   }
 
   const filterPanel = (
-    <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_14px_32px_-28px_rgba(91,46,95,0.48)]">
+    <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_14px_32px_-28px_rgba(7,92,61,0.24)]">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink">تصفية النتائج</h2>
         <button onClick={resetFilters} className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:text-rose">
@@ -666,7 +639,7 @@ function SearchResultsPage() {
             ['over-250', 'أكثر من ٢٥٠ ج.م'],
           ].map(([value, label]) => (
             <label key={value} className="flex cursor-pointer items-center gap-2.5 text-sm text-ink/70">
-              <input type="radio" name="price" value={value} checked={priceRange === value} onChange={() => setPriceRange(value)} className="accent-[#5b2e5f]" />
+              <input type="radio" name="price" value={value} checked={priceRange === value} onChange={() => setPriceRange(value)} className="accent-[#075c3d]" />
               {label}
             </label>
           ))}
@@ -695,7 +668,7 @@ function SearchResultsPage() {
         <div className="mt-3 space-y-2.5">
           {['كل المدن', 'القاهرة', 'الجيزة', 'المعادي', 'الإسكندرية'].map((place) => (
             <label key={place} className="flex cursor-pointer items-center gap-2.5 text-sm text-ink/70">
-              <input type="radio" name="location" checked={location === place} onChange={() => setLocation(place)} className="accent-[#5b2e5f]" />
+              <input type="radio" name="location" checked={location === place} onChange={() => setLocation(place)} className="accent-[#075c3d]" />
               {place}
             </label>
           ))}
@@ -704,7 +677,7 @@ function SearchResultsPage() {
 
       <label className="mt-5 flex cursor-pointer items-center justify-between border-t border-line pt-5 text-sm font-bold text-ink">
         الأحدث أولًا
-        <input type="checkbox" checked={latestOnly} onChange={(event) => setLatestOnly(event.target.checked)} className="h-4 w-4 accent-[#5b2e5f]" />
+        <input type="checkbox" checked={latestOnly} onChange={(event) => setLatestOnly(event.target.checked)} className="h-4 w-4 accent-[#075c3d]" />
       </label>
     </div>
   )
@@ -731,7 +704,7 @@ function SearchResultsPage() {
           <div className="flex flex-1 items-center gap-3 rounded-2xl border border-line bg-white px-4 py-3 shadow-sm transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15">
             <Search size={20} className="shrink-0 text-brand" />
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث عن كاميرا، أدوات، أو معدات حفلات..." className="w-full bg-transparent text-sm text-ink placeholder:text-muted focus:outline-none" />
-            <button type="submit" className="hidden rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-cream hover:bg-[#4a2650] sm:block">بحث</button>
+            <button type="submit" className="hidden rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-cream hover:bg-[#064b32] sm:block">بحث</button>
           </div>
           <button
             type="button"
@@ -758,15 +731,7 @@ function SearchResultsPage() {
               <p className="text-sm font-medium text-ink/65"><span className="font-bold text-ink">{results.length}</span> إعلانًا متاحًا</p>
               <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3 py-1.5 text-xs font-medium text-ink/65"><Clock3 size={14} className="text-brand" /> يتم التحديث يوميًا</div>
             </div>
-            {isLoading ? (
-              <div className="grid min-h-72 place-items-center rounded-2xl border border-line bg-white p-8 text-center text-brand font-bold">
-                جارٍ تحميل النتائج...
-              </div>
-            ) : error ? (
-              <div className="grid min-h-72 place-items-center rounded-2xl border border-rose/30 bg-rose/5 p-8 text-center text-rose font-bold">
-                {error}
-              </div>
-            ) : results.length ? (
+            {results.length ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {results.map((listing) => (
                   <Link key={listing.id} to={`/listing/${listing.id}`} className="block">
@@ -796,129 +761,33 @@ function SearchResultsPage() {
 function ProductPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
-  
-  const [listing, setListing] = useState<any>(null)
-  const [similarListings, setSimilarListings] = useState<Listing[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState('')
-
+  const listing = allListings.find((item) => item.id === id) ?? forYou[0]
   const [activeImage, setActiveImage] = useState(0)
   const [startDate, setStartDate] = useState('2026-08-20')
   const [endDate, setEndDate] = useState('2026-08-23')
   const [quantity, setQuantity] = useState(1)
   const [delivery, setDelivery] = useState(false)
   const [saved, setSaved] = useState(false)
-  
-  const [notice, setNotice] = useState('')
-  const [reviewFilter, setReviewFilter] = useState<'all' | 'photos'>('all')
-  const [gallery, setGallery] = useState<string[]>([])
-  const [unavailable, setUnavailable] = useState<string[]>([])
-  const [apiReviews, setApiReviews] = useState<Array<{ name: string; rating: string; text: string; photo: boolean }>>([])
-
-  const { user } = useAuth()
-  const [canReview, setCanReview] = useState(false)
-  const [showReviewForm, setShowReviewForm] = useState(false)
-  const [reviewRating, setReviewRating] = useState(5)
-  const [reviewText, setReviewText] = useState('')
-  const [reviewError, setReviewError] = useState('')
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
-
-  useEffect(() => {
-    if (!id) return;
-    setIsLoading(true);
-    setError('');
-    
-    if (user) {
-      import('./services/bookings').then(({ getMyBookings }) => {
-        getMyBookings().then(bookings => {
-          const eligible = bookings.some(b => b.listingId === id && b.status === 'completed')
-          setCanReview(eligible)
-        }).catch(console.error)
-      })
-    }
-    
-    import('./services/listings').then(({ getListing, getUnavailableDates, getListingReviews, getListings }) => {
-      getListing(id).then(listingData => {
-        setListing(listingData);
-        setGallery(listingData.photos?.length ? listingData.photos : [listingData.image]);
-        
-        Promise.all([
-          getUnavailableDates(id).catch(() => []),
-          getListingReviews(id).catch(() => []),
-          getListings({ limit: 5, category: listingData.category }).catch(() => [])
-        ]).then(([dates, reviews, similar]) => {
-          setUnavailable(dates)
-          setApiReviews(reviews.map(r => ({ name: r.authorName, rating: r.rating.toFixed(1).replace('.', '٫'), text: r.text, photo: !!r.photoUrl })))
-          setSimilarListings(similar.filter(s => s.id !== id).slice(0, 4))
-        });
-        
-        checkFavorite(id).then(setSaved).catch(console.error);
-      }).catch(err => {
-        console.error(err);
-        setError('لم نتمكن من العثور على الإعلان المطلوب.');
-      }).finally(() => {
-        setIsLoading(false);
-      });
-    });
-  }, [id])
-
+  useEffect(() => { checkFavorite(listing.id).then(setSaved).catch(() => {}) }, [listing.id])
   const toggleSaved = async () => {
-    if (!listing) return;
     try {
       if (saved) { await removeFavorite(listing.id); setSaved(false) }
       else { await addFavorite({ id: listing.id, name: listing.name, category: listing.category, price: listing.price, city: listing.city, image: listing.image, owner: listing.owner, rating: listing.rating }); setSaved(true) }
     } catch (err) { console.error(err) }
   }
+  const [notice, setNotice] = useState('')
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'photos'>('all')
+  const [gallery, setGallery] = useState<string[]>([listing.image])
+  const [unavailable, setUnavailable] = useState<string[]>([])
+  const [apiReviews, setApiReviews] = useState<Array<{ name: string; rating: string; text: string; photo: boolean }>>([])
 
-  const submitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewText.trim()) {
-      setReviewError('يرجى كتابة التقييم');
-      return;
-    }
-    setReviewError('');
-    setIsSubmittingReview(true);
-    
-    try {
-      const { createReview } = await import('./services/listings');
-      await createReview(id!, { rating: reviewRating, text: reviewText });
-      
-      setApiReviews(prev => [{ name: user?.fullName || 'مستخدم', rating: reviewRating.toFixed(1).replace('.', '٫'), text: reviewText, photo: false }, ...prev]);
-      setShowReviewForm(false);
-      setCanReview(false); // Hide button after success
-      setReviewText('');
-      setReviewRating(5);
-      feedback('تم إرسال التقييم بنجاح');
-    } catch (err: any) {
-      setReviewError(err.message || 'تعذّر إرسال التقييم');
-    } finally {
-      setIsSubmittingReview(false);
-    }
-  }
-
-  const [isMessagingOwner, setIsMessagingOwner] = useState(false)
-  const handleMessageOwner = async () => {
-    if (!user) {
-      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`)
-      return
-    }
-    if (user.id === listing.ownerId) {
-      feedback('لا يمكنك مراسلة نفسك.')
-      return
-    }
-    setIsMessagingOwner(true)
-    try {
-      const { ensureConversation } = await import('./services/messages')
-      const conversation = await ensureConversation(listing.id, listing.ownerId)
-      navigate(`/messages?conversation=${conversation.id}`)
-    } catch (err: any) {
-      console.error(err)
-      feedback('تعذّر فتح المحادثة. حاول مجدداً.')
-      setIsMessagingOwner(false)
-    }
-  }
-
+  useEffect(() => {
+    import('./services/listings').then(({ getListing, getUnavailableDates, getListingReviews }) => {
+      getListing(listing.id).then(data => { if (data.photos?.length) setGallery(data.photos) }).catch(() => {})
+      getUnavailableDates(listing.id).then(dates => setUnavailable(dates)).catch(() => {})
+      getListingReviews(listing.id).then(reviews => setApiReviews(reviews.map(r => ({ name: r.authorName, rating: r.rating.toFixed(1).replace('.', '٫'), text: r.text, photo: !!r.photoUrl })))).catch(() => {})
+    })
+  }, [listing.id])
   const calendarDays = Array.from({ length: 14 }, (_, index) => `2026-08-${String(index + 18).padStart(2, '0')}`)
   const days = Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000))
   const dailyPrice = toNumber(listing.price)
@@ -933,110 +802,28 @@ function ProductPage() {
 
   return <div dir="rtl" lang="ar" className="min-h-screen bg-cream pb-24 lg:pb-0">
     <Header />
-    {isLoading ? (
-      <div className="grid min-h-[60vh] place-items-center bg-cream text-brand font-bold">جارٍ تحميل الإعلان...</div>
-    ) : error || !listing ? (
-      <main className="mx-auto flex min-h-[60vh] max-w-xl items-center px-5 py-16 text-center">
-        <section className="w-full rounded-[2rem] border border-line bg-white p-8 shadow-[0_22px_55px_-40px_rgba(91,46,95,.35)]">
-          <p className="text-xs font-black tracking-[.14em] text-rose">خطأ ٤٠٤</p>
-          <h1 className="editorial-display mt-3 text-4xl text-ink">لم نجد هذا الإعلان.</h1>
-          <p className="mt-4 text-sm leading-7 text-ink/60">{error || 'ربما تم حذفه أو أن الرابط غير صحيح.'}</p>
-          <Link to="/search" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-black text-cream">استكشف المنتجات <ArrowLeft size={17} /></Link>
-        </section>
-      </main>
-    ) : (
-      <>
-        {notice && <div role="status" className="fixed bottom-24 left-5 z-50 rounded-2xl bg-ink px-4 py-3 text-sm font-bold text-cream shadow-xl lg:bottom-6">{notice}</div>}
+    {notice && <div role="status" className="fixed bottom-24 left-5 z-50 rounded-2xl bg-ink px-4 py-3 text-sm font-bold text-cream shadow-xl lg:bottom-6">{notice}</div>}
     <main className="mx-auto max-w-6xl px-5 py-7 sm:py-10">
       <nav aria-label="مسار التنقل" className="flex items-center gap-1.5 text-xs text-ink/55"><Link to="/" className="hover:text-brand">الرئيسية</Link><ChevronRight size={14} /><Link to="/search" className="hover:text-brand">تصفّح المنتجات</Link><ChevronRight size={14} /><span className="truncate text-ink/75">{listing.name}</span></nav>
       <div className="mt-5 grid gap-9 lg:grid-cols-[minmax(0,1.45fr)_minmax(21rem,.82fr)]">
         <section>
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-brand-soft"><img src={gallery[activeImage] ?? listing.image} alt={listing.name} className="h-full w-full object-cover" /><div className="absolute left-4 top-4 flex gap-2"><button onClick={() => feedback('تم نسخ رابط الإعلان للمشاركة.')} aria-label="مشاركة الإعلان" className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-brand shadow-sm hover:bg-white"><Share2 size={18} /></button><button onClick={toggleSaved} aria-label="حفظ الإعلان" className={`grid h-10 w-10 place-items-center rounded-full bg-white/90 shadow-sm ${saved ? 'text-rose' : 'text-brand'}`}><Heart size={18} fill={saved ? 'currentColor' : 'none'} /></button></div>{listing.verified && <span className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 rounded-full bg-green px-3 py-1.5 text-xs font-bold text-white"><BadgeCheck size={15} /> مالك موثّق</span>}</div>
           <div className="mt-3 grid grid-cols-4 gap-3">{gallery.map((image, index) => <button key={`${image}-${index}`} onClick={() => setActiveImage(index)} className={`aspect-[4/3] overflow-hidden rounded-xl border-2 transition ${activeImage === index ? 'border-brand' : 'border-transparent opacity-70 hover:opacity-100'}`}><img src={image} alt={`صورة ${index + 1} لـ ${listing.name}`} className="h-full w-full object-cover" /></button>)}</div>
-          <div className="mt-9 border-t border-line pt-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[.12em] text-rose">{listing.category}</p><h1 className="mt-2 text-3xl font-black leading-tight text-ink sm:text-4xl">{listing.name}</h1><div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-ink/65"><span className="inline-flex items-center gap-1"><MapPin size={16} className="text-brand" /> {listing.city}</span><span className="h-4 w-px bg-line" /><span className="inline-flex items-center gap-1 font-semibold text-ink"><Star size={16} className="fill-amber text-amber" /> {listing.rating} <span className="font-normal text-ink/55">({apiReviews.length} تقييمًا)</span></span></div></div><div className="flex gap-3"><button onClick={() => feedback('أضيف الإعلان إلى قائمة المقارنة.')} className="text-xs font-semibold text-brand hover:underline">قارن</button><button onClick={() => feedback('تم تسجيل البلاغ وسيراجعه فريقنا.')} className="inline-flex items-center gap-1 text-xs font-semibold text-ink/50 hover:text-rose"><Flag size={15} /> إبلاغ</button></div></div>
-            <div className="mt-8 space-y-9 border-t border-line pt-8"><section><h2 className="text-xl font-bold text-ink">عن هذا المنتج</h2><p className="mt-3 text-sm leading-7 text-ink/70">{listing.description || 'لا يوجد وصف متاح.'}</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><InfoBlock title="حالة المنتج" text={listing.condition || 'غير محدد'} /><InfoBlock title="ما يشمله الإيجار" text={listing.included?.length ? listing.included.join('، ') : 'لا يوجد ملحقات'} /></div></section>
-              <section className="grid gap-5 md:grid-cols-2"><div><h2 className="text-xl font-bold text-ink">المميزات</h2><div className="mt-4 flex flex-wrap gap-2">{listing.features?.length ? listing.features.map((feature: string) => <span key={feature} className="rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">{feature}</span>) : <span className="text-sm text-ink/60">لا توجد مميزات مضافة</span>}</div></div><div><h2 className="text-xl font-bold text-ink">قواعد المالك</h2><ul className="mt-3 space-y-2 text-sm leading-6 text-ink/65"><li>• الاستلام والتسليم حسب التنسيق مع المالك.</li><li>• يرجى العناية بالمنتج وإعادته بنفس الحالة.</li></ul></div></section>
-              <section className="rounded-3xl border border-line bg-white p-5 sm:p-6">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-bold text-ink">تقييمات المستأجرين</h2>
-                    <p className="mt-1 text-sm text-ink/55">{listing.rating} من ٥ • {apiReviews.length} تجربة إيجار مكتملة</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {canReview && !showReviewForm && (
-                      <button onClick={() => setShowReviewForm(true)} className="rounded-full bg-brand px-4 py-1.5 text-xs font-bold text-cream hover:bg-[#4a2650]">
-                        إضافة تقييم
-                      </button>
-                    )}
-                    <div className="flex rounded-full bg-cream p-1 text-xs font-bold">
-                      <button onClick={() => setReviewFilter('all')} className={`rounded-full px-3 py-1.5 ${reviewFilter === 'all' ? 'bg-white text-brand shadow-sm' : 'text-ink/55'}`}>الكل</button>
-                      <button onClick={() => setReviewFilter('photos')} className={`rounded-full px-3 py-1.5 ${reviewFilter === 'photos' ? 'bg-white text-brand shadow-sm' : 'text-ink/55'}`}>مع صور</button>
-                    </div>
-                  </div>
-                </div>
-
-                {showReviewForm && (
-                  <form onSubmit={submitReview} className="mt-6 rounded-2xl bg-cream p-5">
-                    <h3 className="font-bold text-ink">أضف تقييمك</h3>
-                    
-                    <div className="mt-3 flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <button key={star} type="button" onClick={() => setReviewRating(star)} className={`transition ${reviewRating >= star ? 'text-amber' : 'text-line hover:text-amber/50'}`}>
-                          <Star size={24} fill="currentColor" />
-                        </button>
-                      ))}
-                    </div>
-
-                    <textarea 
-                      value={reviewText} 
-                      onChange={e => setReviewText(e.target.value)} 
-                      placeholder="كيف كانت تجربتك؟" 
-                      className="mt-4 w-full resize-none rounded-xl border border-line bg-white p-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" 
-                      rows={3} 
-                    />
-                    
-                    {reviewError && <p className="mt-2 text-xs font-bold text-rose">{reviewError}</p>}
-                    
-                    <div className="mt-4 flex gap-2">
-                      <button type="submit" disabled={isSubmittingReview} className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-cream hover:bg-[#4a2650] disabled:opacity-50">
-                        {isSubmittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}
-                      </button>
-                      <button type="button" onClick={() => { setShowReviewForm(false); setReviewError(''); }} className="rounded-xl border border-line bg-white px-5 py-2 text-sm font-bold text-ink hover:bg-cream">
-                        إلغاء
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-                <div className="mt-5 space-y-5">
-                  {reviews.length ? reviews.map(review => (
-                    <article key={review.name} className="border-t border-line pt-5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{review.name[0]}</span>
-                          <span className="text-sm font-bold text-ink">{review.name}</span>
-                        </div>
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber"><Star size={13} fill="currentColor" />{review.rating}</span>
-                      </div>
-                      <p className="mt-3 text-sm leading-6 text-ink/65">{review.text}</p>
-                      {review.photo && <img src={gallery[1] ?? gallery[0]} alt="صورة من المستأجر" className="mt-3 h-20 w-28 rounded-xl object-cover" />}
-                    </article>
-                  )) : <p className="text-sm text-ink/60">لا توجد تقييمات بعد.</p>}
-                </div>
-              </section>
+          <div className="mt-9 border-t border-line pt-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold tracking-[.12em] text-rose">{listing.category}</p><h1 className="mt-2 text-3xl font-black leading-tight text-ink sm:text-4xl">{listing.name}</h1><div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-ink/65"><span className="inline-flex items-center gap-1"><MapPin size={16} className="text-brand" /> {listing.city}</span><span className="h-4 w-px bg-line" /><span className="inline-flex items-center gap-1 font-semibold text-ink"><Star size={16} className="fill-amber text-amber" /> {listing.rating} <span className="font-normal text-ink/55">(١٩ تقييمًا)</span></span></div></div><div className="flex gap-3"><button onClick={() => feedback('أضيف الإعلان إلى قائمة المقارنة.')} className="text-xs font-semibold text-brand hover:underline">قارن</button><button onClick={() => feedback('تم تسجيل البلاغ وسيراجعه فريقنا.')} className="inline-flex items-center gap-1 text-xs font-semibold text-ink/50 hover:text-rose"><Flag size={15} /> إبلاغ</button></div></div>
+            <div className="mt-8 space-y-9 border-t border-line pt-8"><section><h2 className="text-xl font-bold text-ink">عن هذا المنتج</h2><p className="mt-3 text-sm leading-7 text-ink/70">معدات احترافية بحالة ممتازة ومُعتنى بها جيدًا، مناسبة لجلسات التصوير وصناعة المحتوى والمشاريع الإبداعية. يتم تسليم المنتج بعد تأكيد الهوية والحجز.</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><InfoBlock title="حالة المنتج" text="ممتازة — استخدام خفيف" /><InfoBlock title="ما يشمله الإيجار" text="حقيبة حماية، بطارية إضافية، وكابل شحن" /></div></section>
+              <section className="grid gap-5 md:grid-cols-2"><div><h2 className="text-xl font-bold text-ink">المميزات</h2><div className="mt-4 flex flex-wrap gap-2">{['تصوير 4K', 'عدسة 24–70 مم', 'واي فاي', 'بطارية إضافية', 'حقيبة حماية'].map(feature => <span key={feature} className="rounded-full bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand">{feature}</span>)}</div></div><div><h2 className="text-xl font-bold text-ink">قواعد المالك</h2><ul className="mt-3 space-y-2 text-sm leading-6 text-ink/65"><li>• الاستلام بين ١٠ ص و٨ م بعد التنسيق.</li><li>• الإلغاء المجاني قبل ٢٤ ساعة.</li><li>• يرجى إعادة المنتج نظيفًا وبملحقاته.</li></ul></div></section>
+              <section className="rounded-3xl border border-line bg-white p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold text-ink">تقييمات المستأجرين</h2><p className="mt-1 text-sm text-ink/55">٤٫٩ من ٥ • ١٩ تجربة إيجار مكتملة</p></div><div className="flex rounded-full bg-cream p-1 text-xs font-bold"><button onClick={() => setReviewFilter('all')} className={`rounded-full px-3 py-1.5 ${reviewFilter === 'all' ? 'bg-white text-brand shadow-sm' : 'text-ink/55'}`}>الكل</button><button onClick={() => setReviewFilter('photos')} className={`rounded-full px-3 py-1.5 ${reviewFilter === 'photos' ? 'bg-white text-brand shadow-sm' : 'text-ink/55'}`}>مع صور</button></div></div><div className="mt-5 space-y-5">{reviews.map(review => <article key={review.name} className="border-t border-line pt-5"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{review.name[0]}</span><span className="text-sm font-bold text-ink">{review.name}</span></div><span className="inline-flex items-center gap-1 text-xs font-bold text-amber"><Star size={13} fill="currentColor" />{review.rating}</span></div><p className="mt-3 text-sm leading-6 text-ink/65">{review.text}</p>{review.photo && <img src={gallery[1] ?? gallery[0]} alt="صورة من المستأجر" className="mt-3 h-20 w-28 rounded-xl object-cover" />}</article>)}</div></section>
               <section className="rounded-3xl bg-brand-soft/60 p-6"><div className="flex gap-3"><ShieldCheck className="shrink-0 text-green" size={22} /><div><h2 className="font-bold text-ink">حماية التأجير من سيركل</h2><p className="mt-1 text-sm leading-6 text-ink/65">تحقق الهوية، اتفاق الحجز، وتفاصيل التأمين تجعل تجربتك أوضح قبل الاستلام وأثناءه وبعد الإرجاع.</p></div></div></section>
             </div></div>
         </section>
-        <aside className="space-y-4 lg:sticky lg:top-32 lg:self-start"><section className="rounded-3xl border border-line bg-white p-5 shadow-sm"><div className="flex items-end justify-between"><div><p className="text-xs text-ink/55">ابتداءً من</p><p className="mt-1 text-2xl font-black text-brand">{listing.price} <span className="text-sm font-bold">ج.م/يوم</span></p></div><span className="rounded-full bg-green/10 px-2.5 py-1 text-xs font-bold text-green">متاح</span></div><div className="mt-5 border-t border-line pt-5"><div className="flex items-center justify-between"><h2 className="font-bold text-ink">اختر التواريخ</h2><span className="text-xs text-ink/50">الأيام المحجوزة غير قابلة للاختيار</span></div><div className="mt-3 grid grid-cols-7 gap-1.5">{calendarDays.map(date => { const blocked = unavailable.includes(date); const selected = date === startDate || date === endDate; return <button key={date} type="button" disabled={blocked} onClick={() => { if (date < startDate || (date > startDate && date === endDate)) setStartDate(date); else setEndDate(date) }} className={`rounded-lg py-2 text-[11px] font-bold transition ${blocked ? 'cursor-not-allowed bg-rose/10 text-rose line-through' : selected ? 'bg-brand text-cream' : 'bg-cream text-ink/70 hover:bg-brand-soft'}`}>{new Date(date).getDate()}</button> })}</div><div className="mt-4 grid grid-cols-2 gap-2"><label className="text-xs font-bold text-ink/60">من<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} className="mt-1 w-full rounded-lg border border-line px-2 py-2 text-xs font-normal text-ink outline-none focus:border-brand" /></label><label className="text-xs font-bold text-ink/60">إلى<input type="date" value={endDate} min={startDate} onChange={event => setEndDate(event.target.value)} className="mt-1 w-full rounded-lg border border-line px-2 py-2 text-xs font-normal text-ink outline-none focus:border-brand" /></label></div></div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-sm font-bold text-ink">الكمية</span><div className="flex items-center gap-3"><button onClick={() => setQuantity(value => Math.max(1, value - 1))} className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand"><Minus size={15} /></button><span className="w-4 text-center text-sm font-bold">{quantity}</span><button onClick={() => setQuantity(value => value + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand"><Plus size={15} /></button></div></div><label className="mt-4 flex cursor-pointer items-center justify-between rounded-xl bg-cream px-3 py-3 text-sm"><span className="inline-flex items-center gap-2 font-bold text-ink"><Truck size={16} className="text-brand" />توصيل إلى موقعك</span><span className="flex items-center gap-2 text-xs text-ink/60">٦٠ ج.م <input checked={delivery} onChange={event => setDelivery(event.target.checked)} type="checkbox" className="accent-[#5b2e5f]" /></span></label><div className="mt-4 space-y-2 border-t border-line pt-4 text-sm"><PriceRow label={`${days} ${days === 1 ? 'يوم' : 'أيام'} × ${quantity}`} value={`${rentalCost.toLocaleString('ar-EG')} ج.م`} /><PriceRow label="رسوم الخدمة" value="٢٥ ج.م" /><PriceRow label="التأمين المسترد" value="٥٠٠ ج.م" /><PriceRow label="التوصيل" value={delivery ? '٦٠ ج.م' : '—'} /><div className="flex justify-between border-t border-line pt-3 text-base font-black text-ink"><span>الإجمالي</span><span>{total.toLocaleString('ar-EG')} ج.م</span></div></div><button onClick={() => navigate(`/checkout?listing=${encodeURIComponent(listing.id)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&delivery=${delivery ? '1' : '0'}`)} className="mt-5 w-full rounded-full bg-brand py-3.5 text-sm font-bold text-cream hover:bg-[#4a2650]">الانتقال للدفع</button><p className="mt-3 text-center text-xs leading-5 text-ink/50">لن يتم خصم أي مبلغ قبل موافقة المالك.</p></section>
-          <section className="rounded-2xl border border-line bg-white p-5"><p className="text-xs font-bold text-muted">مُقدّم من</p><div className="mt-3 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-full bg-brand text-base font-bold text-cream">{listing.owner.charAt(0)}</div><div><p className="font-bold text-ink">{listing.owner}</p><p className="mt-0.5 text-xs text-ink/55">عضو منذ ٢٠٢٤ • ٢٧ تأجيرًا مكتملًا</p></div></div><div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 text-xs text-ink/65"><span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-green" /> هوية موثّقة</span><span className="flex items-center gap-1.5"><BadgeCheck size={16} className="text-green" /> معدل قبول ٩٢٪</span><span className="flex items-center gap-1.5"><Clock3 size={16} className="text-green" /> يرد خلال ساعة</span><span className="flex items-center gap-1.5"><Star size={16} className="text-amber" /> ٤٫٩ تقييم</span></div><div className="mt-4 grid grid-cols-2 gap-2">{(!user || user.id !== listing.ownerId) && (<button onClick={handleMessageOwner} disabled={isMessagingOwner} className="rounded-full border border-brand py-2.5 text-sm font-bold text-brand hover:bg-brand-soft disabled:opacity-50">{isMessagingOwner ? 'جاري الفتح...' : 'راسل المالك'}</button>)}<button onClick={() => feedback('هل الاستلام متاح مساءً؟ تم إرسال السؤال.')} className="rounded-full bg-brand-soft py-2.5 text-sm font-bold text-brand">اسأل سؤالًا</button></div></section>
+        <aside className="space-y-4 lg:sticky lg:top-32 lg:self-start"><section className="rounded-3xl border border-line bg-white p-5 shadow-sm"><div className="flex items-end justify-between"><div><p className="text-xs text-ink/55">ابتداءً من</p><p className="mt-1 text-2xl font-black text-brand">{listing.price} <span className="text-sm font-bold">ج.م/يوم</span></p></div><span className="rounded-full bg-green/10 px-2.5 py-1 text-xs font-bold text-green">متاح</span></div><div className="mt-5 border-t border-line pt-5"><div className="flex items-center justify-between"><h2 className="font-bold text-ink">اختر التواريخ</h2><span className="text-xs text-ink/50">الأيام المحجوزة غير قابلة للاختيار</span></div><div className="mt-3 grid grid-cols-7 gap-1.5">{calendarDays.map(date => { const blocked = unavailable.includes(date); const selected = date === startDate || date === endDate; return <button key={date} type="button" disabled={blocked} onClick={() => { if (date < startDate || (date > startDate && date === endDate)) setStartDate(date); else setEndDate(date) }} className={`rounded-lg py-2 text-[11px] font-bold transition ${blocked ? 'cursor-not-allowed bg-rose/10 text-rose line-through' : selected ? 'bg-brand text-cream' : 'bg-cream text-ink/70 hover:bg-brand-soft'}`}>{new Date(date).getDate()}</button> })}</div><div className="mt-4 grid grid-cols-2 gap-2"><label className="text-xs font-bold text-ink/60">من<input type="date" value={startDate} onChange={event => setStartDate(event.target.value)} className="mt-1 w-full rounded-lg border border-line px-2 py-2 text-xs font-normal text-ink outline-none focus:border-brand" /></label><label className="text-xs font-bold text-ink/60">إلى<input type="date" value={endDate} min={startDate} onChange={event => setEndDate(event.target.value)} className="mt-1 w-full rounded-lg border border-line px-2 py-2 text-xs font-normal text-ink outline-none focus:border-brand" /></label></div></div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-sm font-bold text-ink">الكمية</span><div className="flex items-center gap-3"><button onClick={() => setQuantity(value => Math.max(1, value - 1))} className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand"><Minus size={15} /></button><span className="w-4 text-center text-sm font-bold">{quantity}</span><button onClick={() => setQuantity(value => value + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand"><Plus size={15} /></button></div></div><label className="mt-4 flex cursor-pointer items-center justify-between rounded-xl bg-cream px-3 py-3 text-sm"><span className="inline-flex items-center gap-2 font-bold text-ink"><Truck size={16} className="text-brand" />توصيل إلى موقعك</span><span className="flex items-center gap-2 text-xs text-ink/60">٦٠ ج.م <input checked={delivery} onChange={event => setDelivery(event.target.checked)} type="checkbox" className="accent-[#075c3d]" /></span></label><div className="mt-4 space-y-2 border-t border-line pt-4 text-sm"><PriceRow label={`${days} ${days === 1 ? 'يوم' : 'أيام'} × ${quantity}`} value={`${rentalCost.toLocaleString('ar-EG')} ج.م`} /><PriceRow label="رسوم الخدمة" value="٢٥ ج.م" /><PriceRow label="التأمين المسترد" value="٥٠٠ ج.م" /><PriceRow label="التوصيل" value={delivery ? '٦٠ ج.م' : '—'} /><div className="flex justify-between border-t border-line pt-3 text-base font-black text-ink"><span>الإجمالي</span><span>{total.toLocaleString('ar-EG')} ج.م</span></div></div><button onClick={() => navigate(`/checkout?listing=${encodeURIComponent(listing.id)}&item=${encodeURIComponent(listing.name)}&image=${encodeURIComponent(listing.image)}&city=${encodeURIComponent(listing.city)}&owner=${encodeURIComponent(listing.owner)}&dailyPrice=${dailyPrice}&start=${encodeURIComponent(dateLabel(startDate))}&end=${encodeURIComponent(dateLabel(endDate))}&days=${days}&delivery=${delivery ? '1' : '0'}`)} className="mt-5 w-full rounded-full bg-brand py-3.5 text-sm font-bold text-cream hover:bg-[#064b32]">الانتقال للدفع</button><p className="mt-3 text-center text-xs leading-5 text-ink/50">لن يتم خصم أي مبلغ قبل موافقة المالك.</p></section>
+          <section className="rounded-2xl border border-line bg-white p-5"><p className="text-xs font-bold text-muted">مُقدّم من</p><div className="mt-3 flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-full bg-brand text-base font-bold text-cream">{listing.owner.charAt(0)}</div><div><p className="font-bold text-ink">{listing.owner}</p><p className="mt-0.5 text-xs text-ink/55">عضو منذ ٢٠٢٤ • ٢٧ تأجيرًا مكتملًا</p></div></div><div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 text-xs text-ink/65"><span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-green" /> هوية موثّقة</span><span className="flex items-center gap-1.5"><BadgeCheck size={16} className="text-green" /> معدل قبول ٩٢٪</span><span className="flex items-center gap-1.5"><Clock3 size={16} className="text-green" /> يرد خلال ساعة</span><span className="flex items-center gap-1.5"><Star size={16} className="text-amber" /> ٤٫٩ تقييم</span></div><div className="mt-4 grid grid-cols-2 gap-2"><button onClick={() => feedback('تم فتح محادثة مع المالك.')} className="rounded-full border border-brand py-2.5 text-sm font-bold text-brand hover:bg-brand-soft">راسل المالك</button><button onClick={() => feedback('هل الاستلام متاح مساءً؟ تم إرسال السؤال.')} className="rounded-full bg-brand-soft py-2.5 text-sm font-bold text-brand">اسأل سؤالًا</button></div></section>
           <section className="overflow-hidden rounded-2xl border border-line bg-white"><div className="flex items-center gap-2 px-4 py-3"><MapPin size={17} className="text-brand" /><div><h2 className="text-sm font-bold text-ink">الاستلام أو التوصيل</h2><p className="mt-0.5 text-xs text-ink/55">منطقة {listing.city} — يظهر العنوان الدقيق بعد التأكيد</p></div></div><iframe title={`خريطة موقع الاستلام في ${listing.city}`} src={`https://www.google.com/maps?q=${encodeURIComponent(`${listing.city}, Egypt`)}&z=13&output=embed`} className="h-44 w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /></section>
         </aside>
       </div>
-      <section className="mt-14 border-t border-line pt-9"><div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-ink">منتجات مشابهة بالقرب منك</h2><Link to="/search" className="inline-flex items-center gap-1 text-sm font-bold text-brand hover:underline">عرض الكل <ArrowLeft size={17} /></Link></div><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{similarListings.map(item => <Link key={item.id} to={`/listing/${item.id}`}><ListingCard listing={item} full /></Link>)}</div></section>
+      <section className="mt-14 border-t border-line pt-9"><div className="flex items-center justify-between"><h2 className="text-2xl font-bold text-ink">منتجات مشابهة بالقرب منك</h2><Link to="/search" className="inline-flex items-center gap-1 text-sm font-bold text-brand hover:underline">عرض الكل <ArrowLeft size={17} /></Link></div><div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{recommended.slice(0, 4).map(item => <Link key={item.id} to={`/listing/${item.id}`}><ListingCard listing={item} full /></Link>)}</div></section>
     </main>
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur lg:hidden"><div className="mx-auto flex max-w-md items-center justify-between gap-4"><div><p className="text-xs text-ink/55">{days} أيام</p><p className="font-black text-brand">{total.toLocaleString('ar-EG')} ج.م</p></div><button onClick={() => navigate(`/checkout?listing=${encodeURIComponent(listing.id)}&start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}&delivery=${delivery ? '1' : '0'}`)} className="rounded-full bg-brand px-5 py-3 text-sm font-bold text-cream">الدفع</button></div></div>
-    </>
-    )}
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur lg:hidden"><div className="mx-auto flex max-w-md items-center justify-between gap-4"><div><p className="text-xs text-ink/55">{days} أيام</p><p className="font-black text-brand">{total.toLocaleString('ar-EG')} ج.م</p></div><button onClick={() => navigate(`/checkout?listing=${encodeURIComponent(listing.id)}&item=${encodeURIComponent(listing.name)}&image=${encodeURIComponent(listing.image)}&city=${encodeURIComponent(listing.city)}&owner=${encodeURIComponent(listing.owner)}&dailyPrice=${dailyPrice}&start=${encodeURIComponent(dateLabel(startDate))}&end=${encodeURIComponent(dateLabel(endDate))}&days=${days}&delivery=${delivery ? '1' : '0'}`)} className="rounded-full bg-brand px-5 py-3 text-sm font-bold text-cream">الدفع</button></div></div>
     <Footer />
   </div>
 }
@@ -1048,32 +835,37 @@ function PriceRow({ label, value }: { label: string, value: string }) { return <
 function AuthRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()
   const location = useLocation()
-  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ تحميل حسابك...</div>
-  if (!user) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />
+  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ التحميل...</div>
+  if (!user) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
   return <>{children}</>
 }
 
 function DashboardGate() {
   const { user, loading } = useAuth()
-  const location = useLocation()
-  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ تجهيز حسابك...</div>
-  if (!user) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />
-  if (!user.phoneVerified) return <Navigate to={`/auth/verify-phone?redirect=${encodeURIComponent(location.pathname)}`} replace />
+  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ التحميل...</div>
+  if (!user) return <Navigate to="/login?redirect=/dashboard" replace />
   if (!user.onboardingCompleted) return <Navigate to="/onboarding" replace />
   return <Dashboard />
 }
 
 function OnboardingGate() {
   const { user, loading } = useAuth()
-  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ تجهيز حسابك...</div>
+  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ التحميل...</div>
   if (!user) return <Navigate to="/login?redirect=/onboarding" replace />
-  if (!user.phoneVerified) return <Navigate to="/auth/verify-phone?redirect=/onboarding" replace />
-  if (user.onboardingCompleted) return <Navigate to="/" replace />
+  if (user.onboardingCompleted) return <Navigate to="/dashboard" replace />
   return <Onboarding />
 }
 
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return <div dir="rtl" className="grid min-h-screen place-items-center bg-cream text-sm font-bold text-brand">جارٍ التحقق من الصلاحيات...</div>
+  if (!user) return <Navigate to={`/login?redirect=/admin`} replace />
+  if (!user.isAdmin) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 function NotFoundPage() {
-  return <div dir="rtl" lang="ar" className="min-h-screen bg-cream"><Header /><main className="mx-auto flex min-h-[calc(100vh-120px)] max-w-xl items-center px-5 py-16 text-center"><section className="w-full rounded-[2rem] border border-line bg-white p-8 shadow-[0_22px_55px_-40px_rgba(91,46,95,.35)]"><p className="text-xs font-black tracking-[.14em] text-amber">٤٠٤</p><h1 className="editorial-display mt-3 text-4xl text-ink">لم نجد هذه الصفحة.</h1><p className="mt-4 text-sm leading-7 text-ink/60">ربما تم نقل الرابط أو أن العنوان غير صحيح. يمكنك العودة إلى الاستكشاف من الصفحة الرئيسية.</p><Link to="/" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-black text-cream">العودة للرئيسية <ArrowLeft size={17} /></Link></section></main></div>
+  return <div dir="rtl" lang="ar" className="min-h-screen bg-cream"><Header /><main className="mx-auto flex min-h-[calc(100vh-120px)] max-w-xl items-center px-5 py-16 text-center"><section className="w-full rounded-[2rem] border border-line bg-white p-8 shadow-[0_22px_55px_-40px_rgba(7,92,61,.22)]"><p className="text-xs font-black tracking-[.14em] text-amber">٤٠٤</p><h1 className="editorial-display mt-3 text-4xl text-ink">لم نجد هذه الصفحة.</h1><p className="mt-4 text-sm leading-7 text-ink/60">ربما تم نقل الرابط أو أن العنوان غير صحيح. يمكنك العودة إلى الاستكشاف من الصفحة الرئيسية.</p><Link to="/" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-black text-cream">العودة للرئيسية <ArrowLeft size={17} /></Link></section></main></div>
 }
 
 
@@ -1084,6 +876,7 @@ const router = createBrowserRouter([
   { path: '/auth/sign-in', Component: Login },
   { path: '/auth/sign-up', Component: SignUp },
   { path: '/auth/verify-phone', Component: PhoneVerification },
+  { path: '/forgot-password', Component: ForgotPassword },
   { path: '/onboarding', Component: OnboardingGate },
   { path: '/checkout', element: <AuthRoute><Checkout /></AuthRoute> },
   { path: '/my-bookings', element: <AuthRoute><MyBookings /></AuthRoute> },
@@ -1105,10 +898,11 @@ const router = createBrowserRouter([
   { path: '/faqs', Component: FaqPage },
   { path: '/contact', Component: ContactPage },
   { path: '/policy', Component: PolicyPage },
+  { path: '/admin', element: <AdminRoute><Admin /></AdminRoute> },
   { path: '/listing/:id', Component: ProductPage },
   { path: '*', Component: NotFoundPage },
 ])
 
 export default function App() {
-  return <RouterProvider router={router} />
+  return <AuthProvider><RouterProvider router={router} /></AuthProvider>
 }

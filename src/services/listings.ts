@@ -47,8 +47,8 @@ export async function getOwnerListings(): Promise<OwnerListing[]> {
   return api<OwnerListing[]>('/listings?mine=true')
 }
 
-export async function createListing(data: FormData): Promise<OwnerListing> {
-  return api<OwnerListing>('/listings', { method: 'POST', body: data })
+export async function createListing(data: Omit<OwnerListing, 'id' | 'rating' | 'verified'>): Promise<OwnerListing> {
+  return api<OwnerListing>('/listings', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export async function updateListing(id: string, data: Partial<OwnerListing>): Promise<OwnerListing> {
@@ -65,8 +65,4 @@ export async function getListingReviews(id: string): Promise<Review[]> {
 
 export async function getUnavailableDates(id: string): Promise<string[]> {
   return api<string[]>(`/listings/${id}/availability`)
-}
-
-export async function createReview(id: string, data: { rating: number, text: string }): Promise<Review> {
-  return api<Review>(`/listings/${id}/reviews`, { method: 'POST', body: JSON.stringify(data) })
 }

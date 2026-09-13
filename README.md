@@ -96,21 +96,10 @@ pnpm install
 Create a `.env.local` file in the project root:
 
 ```env
-VITE_API_URL=http://localhost:3001
+VITE_API_URL=https://your-backend.example.com
 ```
 
-### Backend
-
-The API lives in a separate repository: `~/programming/circle-backend` (NestJS 11 + Prisma + PostgreSQL). See its `README.md` for setup — the short version:
-
-```bash
-cd ~/programming/circle-backend
-docker run -d --name circle-postgres \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=circle_rent \
-  -p 5432:5432 postgres:16-alpine
-npm install && npx prisma migrate dev && npm run db:seed
-npm run start:dev   # http://localhost:3001
-```
+Leave `VITE_API_URL` empty during local development — the client will fall back to relative paths and surface clear errors when the backend is unavailable.
 
 ### Develop
 
@@ -136,20 +125,54 @@ pnpm preview
 
 ## API Contract
 
-The full contract is documented in `API_CONTRACT.md` and implemented by the `circle-backend` NestJS app. All endpoints require a `Bearer` token in the `Authorization` header (except auth endpoints). The token is stored in `localStorage` under the key `circle_token`.
+The frontend expects a REST API at `VITE_API_URL`. All endpoints require a `Bearer` token in the `Authorization` header (except auth endpoints). The token is stored in `localStorage` under the key `circle_token`.
 
-Key endpoints (see `src/services/*` for the authoritative list):
+### Auth
 
-| Area | Endpoints |
-|---|---|
-| Auth | `POST /auth/sign-up`, `POST /auth/sign-in` → `{ otpSent }`, `POST /auth/verify-otp`, `GET /auth/me`, `POST /auth/sign-out`, `PUT /auth/onboarding` |
-| Listings | `GET /listings` (filters, `?mine=true`), `GET/POST/PUT/DELETE /listings/:id`, `GET/POST /listings/:id/reviews`, `GET /listings/:id/availability` |
-| Bookings | `GET /bookings?role=renter\|owner`, `POST /bookings`, `GET /bookings/:id`, `PUT /bookings/:id/status`, `PUT /bookings/:id/return` |
-| Favorites | `GET/POST /favorites`, `DELETE /favorites/:id`, `GET /favorites/:id/check` |
-| Messages | `GET/POST /conversations`, `GET/POST /conversations/:id/messages`, `PUT /conversations/:id/read` |
-| Saved searches | `GET/POST /saved-searches`, `PUT/DELETE /saved-searches/:id` |
-| Dashboard | `GET /dashboard/owner/summary`, `GET /dashboard/renter/summary` |
-| Users | `GET /users/:id`, `PUT /users/me`, `POST /users/me/verification` |
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/auth/send-otp` | Send OTP to phone number |
+| `POST` | `/auth/verify-otp` | Verify OTP → returns `{ token }` |
+| `GET` | `/auth/me` | Fetch authenticated user |
+| `POST` | `/auth/sign-out` | Invalidate token |
+
+### Listings
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/listings` | Search / browse listings |
+| `GET` | `/listings/:id` | Single listing detail |
+| `POST` | `/listings` | Create listing |
+| `PUT` | `/listings/:id` | Update listing |
+| `DELETE` | `/listings/:id` | Delete listing |
+| `GET` | `/listings/:id/unavailable-dates` | Blocked dates for calendar |
+| `GET` | `/listings/:id/reviews` | Listing reviews |
+
+### Bookings
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/bookings` | List user bookings |
+| `POST` | `/bookings` | Create booking request |
+| `GET` | `/bookings/:id` | Booking detail |
+| `PATCH` | `/bookings/:id/approve` | Owner approves |
+| `PATCH` | `/bookings/:id/decline` | Owner declines |
+| `PATCH` | `/bookings/:id/cancel` | Renter cancels |
+| `PATCH` | `/bookings/:id/return` | Confirm return |
+
+### Other
+
+| Method | Path | Description |
+|---|---|---|
+| `GET/POST/DELETE` | `/favorites` | Manage saved listings |
+| `GET/POST/DELETE` | `/saved-searches` | Manage saved searches |
+| `GET` | `/messages` | Conversations list |
+| `GET` | `/messages/:bookingId` | Messages for a booking |
+| `POST` | `/messages/:bookingId` | Send a message |
+| `GET` | `/users/:id` | Public profile |
+| `PUT` | `/users/me` | Update own profile |
+| `POST` | `/users/me/avatar` | Upload avatar |
+| `POST` | `/verification/submit` | Submit ID verification |
 
 ---
 
