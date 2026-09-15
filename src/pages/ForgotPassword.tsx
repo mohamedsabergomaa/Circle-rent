@@ -1,46 +1,88 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { LoaderCircle, ShieldCheck } from 'lucide-react'
-import AuthLayout, { PhoneField, TextField, SubmitButton } from './AuthLayout'
-import { useAuth } from '../context/AuthContext'
-import { friendlyError } from '../lib/api'
+import { useState, type FormEvent } from "react"
+import { Link } from "react-router"
+import { CheckCircle2, KeyRound, LoaderCircle, Mail } from "lucide-react"
+import AuthLayout, { SubmitButton, TextField } from "./AuthLayout"
+import { requestPasswordReset, resetPassword } from "../services/auth"
+import { ApiError, friendlyError } from "../lib/api"
 
-type Method = 'phone' | 'email'
+type Step = "email" | "code"
 
 export default function ForgotPassword() {
-  const navigate = useNavigate()
-  const { signIn } = useAuth()
-  const [method, setMethod] = useState<Method>('phone')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
+  const [step, setStep] = useState<Step>("email")
+  const [email, setEmail] = useState("")
+  const [code, setCode] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [resent, setResent] = useState(false)
+  const [done, setDone] = useState(false)
 
-  const handleSubmit = async (event: FormEvent) => {
+  const sendCode = async (): Promise<void> => {
+    setLoading(true)
+    setError("")
+    try {
+      await requestPasswordReset(email)
+      setResent(false)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404)
+        setError("لم نعثر على حساب مرتبط بهذا البريد الإلكتروني.")
+      else if (err instanceof ApiError && err.message) setError(err.message)
+      else setError(friendlyError(err, "تعذّر إرسال رمز التحقق، حاول مرة أخرى."))
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEmail = async (event: FormEvent) => {
     event.preventDefault()
-    setError('')
-    if (method === 'phone') {
-      if (phone.length < 9) { setError('أدخل رقم جوال صالحًا.'); return }
-      setLoading(true)
-      try {
-        await signIn({ phoneNumber: `+20${phone}` })
-        navigate(`/auth/verify-phone?phone=${encodeURIComponent(`+20${phone}`)}&redirect=/`)
-      } catch (err) {
-        setError(friendlyError(err, 'تعذّر إرسال رمز التحقق.'))
-      } finally {
-        setLoading(false)
-      }
-    } else {
-      if (!email.includes('@')) { setError('أدخل بريدًا إلكترونيًا صالحًا.'); return }
-      setLoading(true)
-      try {
-        await signIn({ phoneNumber: email })
-        navigate(`/auth/verify-phone?redirect=/`)
-      } catch (err) {
-        setError(friendlyError(err, 'تعذّر إرسال رابط الاستعادة.'))
-      } finally {
-        setLoading(false)
-      }
+    if (!email.includes("@")) {
+      setError("أدخل بريدًا إلكترونيًا صالحًا.")
+      return
+    }
+    try {
+      await sendCode()
+      setCode("")
+      setPassword("")
+      setStep("code")
+    } catch {
+      /* error already shown */
+    }
+  }
+
+  const handleResend = async (event?: FormEvent) => {
+    event?.preventDefault()
+    if (loading) return
+    try {
+      await sendCode()
+      setResent(true)
+    } catch {
+      /* error already shown */
+    }
+  }
+
+  const handleReset = async (event: FormEvent) => {
+    event.preventDefault()
+    if (code.trim().length < 4) {
+      setError("أدخل رمز التحقق المُرسل إلى بريدك الإلكتروني.")
+      return
+    }
+    if (password.length < 8) {
+      setError("كلمة المرور الجديدة يجب أن تكون ٨ أحرف على الأقل.")
+      return
+    }
+    setLoading(true)
+    setError("")
+    try {
+      await resetPassword(email, code.trim(), password)
+      setDone(true)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404)
+        setError("الرمز غير صحيح أو انتهت صلاحيته. اطلب رمزًا جديدًا.")
+      else if (err instanceof ApiError && err.message) setError(err.message)
+      else setError(friendlyError(err, "تعذّر إعادة تعيين كلمة المرور."))
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -48,42 +90,136 @@ export default function ForgotPassword() {
     <AuthLayout
       variant="signin"
       eyebrow="استعادة الوصول"
-      title="نسيت كلمة المرور؟"
-      subtitle="اختر طريقة التحقق وسنرسل لك رمزًا لإعادة الوصول إلى حسابك."
-      footer={<>تذكّرت بياناتك؟ <Link to="/login" className="font-black text-brand hover:underline">سجّل الدخول</Link></>}
+      title={done ? "تم تحديث كلمة المرور" : step === "code" ? "أدخل الرمز" : "نسيت كلمة المرور؟"}
+      subtitle={
+        done
+          ? "يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة."
+          : step === "code"
+            ? "أدخل الرمز الذي أرسلناه إلى بريدك، ثم اختر كلمة مرور جديدة."
+            : "أدخل بريدك الإلكتروني وسنرسل لك رمزًا لإعادة تعيين كلمة المرور."
+      }
+      footer={
+        <Link to="/login" className="font-black text-brand hover:underline">
+          تذكّرت بياناتك؟ سجّل الدخول
+        </Link>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-start gap-3 rounded-2xl border border-brand/20 bg-brand-soft/50 p-4">
-          <ShieldCheck size={20} className="mt-0.5 shrink-0 text-brand" />
-          <p className="text-xs leading-6 text-ink/65">
-            سنرسل لك رمز تحقق مؤقتًا لإعادة تأكيد هويتك وتسجيل الدخول مجددًا.
-          </p>
+      {done ? (
+        <div className="rounded-3xl border border-green/25 bg-green/5 p-6 text-center">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-green/10 text-green">
+            <CheckCircle2 size={26} />
+          </div>
+          <h2 className="mt-5 text-xl font-black text-ink">كلمة المرور جاهزة</h2>
+          <Link
+            to="/login"
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-brand px-6 text-sm font-black text-cream hover:bg-[#064b32]"
+          >
+            تسجيل الدخول
+          </Link>
         </div>
-
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-line bg-white p-1.5">
-          {([['phone', 'رقم الجوال'], ['email', 'البريد الإلكتروني']] as [Method, string][]).map(([value, label]) => (
+      ) : step === "email" ? (
+        <form onSubmit={handleEmail} className="space-y-6">
+          <div className="flex items-start gap-3 rounded-2xl border border-brand/20 bg-brand-soft/50 p-4">
+            <Mail size={20} className="mt-0.5 shrink-0 text-brand" />
+            <p className="text-xs leading-6 text-ink/65">
+              سنرسل رمزًا إلى البريد الإلكتروني المرتبط بحسابك.
+            </p>
+          </div>
+          <TextField
+            label="البريد الإلكتروني"
+            value={email}
+            onChange={(value) => {
+              setEmail(value)
+              setError("")
+            }}
+            type="email"
+            autoComplete="email"
+            placeholder="name@example.com"
+            error={error}
+          />
+          <SubmitButton loading={loading}>
+            {loading ? (
+              <>
+                <LoaderCircle size={18} className="animate-spin" /> جارٍ الإرسال
+              </>
+            ) : (
+              "إرسال رمز التحقق"
+            )}
+          </SubmitButton>
+        </form>
+      ) : (
+        <form onSubmit={handleReset} className="space-y-6">
+          <div className="flex items-start gap-3 rounded-2xl border border-brand/20 bg-brand-soft/50 p-4">
+            <KeyRound size={20} className="mt-0.5 shrink-0 text-brand" />
+            <div className="min-w-0 flex-1 text-xs leading-6 text-ink/65">
+              <p className="truncate font-bold text-ink">{email}</p>
+              <p className="mt-0.5">
+                أدخل الرمز المكوّن من ٤ إلى ٨ أرقام ثم كلمة مرور جديدة.
+              </p>
+            </div>
+          </div>
+          <TextField
+            label="رمز التحقق"
+            value={code}
+            onChange={(value) => {
+              setCode(value.replace(/[^0-9]/g, ""))
+              setError("")
+            }}
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={8}
+            placeholder="000000"
+            error={error}
+          />
+          <TextField
+            label="كلمة المرور الجديدة"
+            value={password}
+            onChange={(value) => {
+              setPassword(value)
+              setError("")
+            }}
+            type="password"
+            autoComplete="new-password"
+            placeholder="٨ أحرف على الأقل"
+          />
+          <SubmitButton loading={loading}>
+            {loading ? (
+              <>
+                <LoaderCircle size={18} className="animate-spin" /> جارٍ الحفظ
+              </>
+            ) : (
+              "إعادة تعيين كلمة المرور"
+            )}
+          </SubmitButton>
+          <div className="flex items-center justify-between text-sm">
             <button
-              key={value}
               type="button"
-              onClick={() => { setMethod(value); setError('') }}
-              className={`rounded-xl py-2.5 text-sm font-bold transition ${method === value ? 'bg-brand text-cream shadow-sm' : 'text-ink/55 hover:text-ink'}`}
+              onClick={handleResend}
+              disabled={loading}
+              className="font-bold text-brand transition hover:underline disabled:opacity-50"
             >
-              {label}
+              إعادة إرسال الرمز
             </button>
-          ))}
-        </div>
-
-        {method === 'phone'
-          ? <PhoneField value={phone} onChange={value => { setPhone(value); setError('') }} error={error} />
-          : <TextField label="البريد الإلكتروني" value={email} onChange={value => { setEmail(value); setError('') }} type="email" placeholder="name@example.com" error={error} />
-        }
-
-        <SubmitButton loading={loading}>
-          {loading
-            ? <><LoaderCircle size={18} className="animate-spin" /> جارٍ الإرسال</>
-            : method === 'phone' ? 'إرسال رمز التحقق' : 'إرسال رابط الاستعادة'}
-        </SubmitButton>
-      </form>
+            <button
+              type="button"
+              onClick={() => {
+                setError("")
+                setStep("email")
+              }}
+              disabled={loading}
+              className="font-bold text-ink/55 transition hover:text-brand disabled:opacity-50"
+            >
+              تغيير البريد الإلكتروني
+            </button>
+          </div>
+          {resent && (
+            <p className="text-center text-xs font-medium text-green">
+              أعدنا إرسال الرمز إلى بريدك الإلكتروني.
+            </p>
+          )}
+        </form>
+      )}
     </AuthLayout>
   )
 }

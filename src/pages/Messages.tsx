@@ -1,25 +1,389 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
-import { ArrowLeft, CalendarDays, CheckCheck, ChevronLeft, MessageCircle, MoreHorizontal, Search, Send, X } from 'lucide-react'
-import { Header } from '../App'
-import { getConversations, getMessages, sendMessage } from '../services/messages'
-import type { Conversation, Message } from '../types'
-import { getMyBookings as getBookings } from '../services/bookings'
+import { useMemo, useRef, useState, useEffect } from "react"
 
-const time = (iso: string) => new Intl.DateTimeFormat('ar-SA', { hour: 'numeric', minute: '2-digit' }).format(new Date(iso))
-const relative = (iso: string) => new Intl.DateTimeFormat('ar-SA', { day: 'numeric', month: 'short' }).format(new Date(iso))
+import { Link, useNavigate, useSearchParams } from "react-router"
+
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCheck,
+  ChevronLeft,
+  MessageCircle,
+  MoreHorizontal,
+  Search,
+  Send,
+  X,
+} from "lucide-react"
+
+import { Header } from "../App"
+
+import {
+  getConversations,
+  getMessages,
+  sendMessage,
+} from "../services/messages"
+
+import type { Conversation, Message } from "../types"
+
+import { getMyBookings as getBookings } from "../services/bookings"
+
+const time = (iso: string) =>
+  new Intl.DateTimeFormat("ar-SA", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(iso))
+
+const relative = (iso: string) =>
+  new Intl.DateTimeFormat("ar-SA", { day: "numeric", month: "short" }).format(
+    new Date(iso),
+  )
 
 export default function Messages() {
-  const navigate = useNavigate(); const [params] = useSearchParams(); const [conversations, setConversations] = useState<Conversation[]>([]); useEffect(() => { getConversations().then(setConversations).catch(() => {}) }, []); const [selectedId, setSelectedId] = useState<string | null>(params.get('conversation')); const [messages, setMessages] = useState<Message[]>([]); useEffect(() => { if (selectedId) { getMessages(selectedId).then(setMessages).catch(() => {}) } }, [selectedId]); const [query, setQuery] = useState(''); const [mobileOpen, setMobileOpen] = useState(Boolean(params.get('conversation')))
-  useEffect(() => { const bookingId = params.get('booking'); if (!bookingId) return; getBookings().then(b => { const booking = b.find(item => item.id === bookingId); if (booking) { getConversations().then(c => { setConversations(c); const match = c.find(x => x.bookingId === bookingId); if (match) { setSelectedId(match.id); setMobileOpen(true) } }) } }).catch(() => {}) }, [params])
-  const selected = conversations.find(item => item.id === selectedId) ?? conversations[0] ?? null
-  const visible = useMemo(() => conversations.filter(item => item.ownerName.includes(query) || item.listingName.includes(query)), [conversations, query])
-  const select = (id: string) => { setSelectedId(id); setMobileOpen(true); navigate(`/messages?conversation=${id}`, { replace: true }) }
-  const send = async (body: string) => { if (!selected || !body.trim()) return; try { const newMsg = await sendMessage(selected.id, body.trim()); setMessages(prev => [...prev, newMsg]); setConversations(prev => prev.map(c => c.id === selected.id ? { ...c, updatedAt: newMsg.createdAt, context: newMsg.body } : c).sort((a,b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))); } catch(e) { console.error(e) } }
-  return <div dir="rtl" lang="ar" className="min-h-screen bg-cream"><Header /><main className="mx-auto max-w-6xl px-5 py-8 sm:py-10"><div className="flex items-end justify-between border-b border-line pb-7"><div><p className="text-xs font-black tracking-[.14em] text-amber">التواصل حول تأجيراتك</p><h1 className="editorial-display mt-2 text-5xl leading-none text-ink">الرسائل</h1></div><p className="hidden text-sm text-ink/55 sm:block">{conversations.reduce((sum, item) => sum + item.unread, 0)} رسائل غير مقروءة</p></div><div className="mt-7 grid min-h-[620px] overflow-hidden rounded-[1.8rem] border border-line bg-white lg:grid-cols-[20rem_minmax(0,1fr)]"><aside className={`${mobileOpen ? 'hidden lg:block' : 'block'} border-l border-line bg-[#fcfaf8]`}><div className="border-b border-line p-4"><label className="flex h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 text-ink/45"><Search size={17} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="ابحث في الرسائل" className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40" /></label></div><div className="max-h-[570px] overflow-y-auto">{visible.map(item => <ConversationRow key={item.id} conversation={item} active={item.id === selected?.id} onClick={() => select(item.id)} />)}{!visible.length && <p className="p-8 text-center text-sm text-ink/50">لا توجد محادثات مطابقة.</p>}</div></aside><section className={`${mobileOpen ? 'flex' : 'hidden lg:flex'} min-h-[620px] flex-col`}>{selected ? <Thread conversation={selected} messages={messages.filter(item => item.conversationId === selected.id)} onBack={() => setMobileOpen(false)} onSend={send} /> : <EmptyThread />}</section></div></main></div>
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  useEffect(() => {
+    getConversations()
+      .then(setConversations)
+      .catch(() => {})
+  }, [])
+  const [selectedId, setSelectedId] = useState<string | null>(
+    params.get("conversation"),
+  )
+  const [messages, setMessages] = useState<Message[]>([])
+  useEffect(() => {
+    if (selectedId) {
+      getMessages(selectedId)
+        .then(setMessages)
+        .catch(() => {})
+    }
+  }, [selectedId])
+  const [query, setQuery] = useState("")
+  const [mobileOpen, setMobileOpen] = useState(
+    Boolean(params.get("conversation")),
+  )
+
+  useEffect(() => {
+    const bookingId = params.get("booking")
+    if (!bookingId) return
+    getBookings()
+      .then((b) => {
+        const booking = b.find((item) => item.id === bookingId)
+        if (booking) {
+          getConversations().then((c) => {
+            setConversations(c)
+            const match = c.find((x) => x.bookingId === bookingId)
+            if (match) {
+              setSelectedId(match.id)
+              setMobileOpen(true)
+            }
+          })
+        }
+      })
+      .catch(() => {})
+  }, [params])
+
+  const selected =
+    conversations.find((item) => item.id === selectedId) ??
+    conversations[0] ??
+    null
+
+  const visible = useMemo(
+    () =>
+      conversations.filter(
+        (item) =>
+          item.ownerName.includes(query) || item.listingName.includes(query),
+      ),
+    [conversations, query],
+  )
+
+  const select = (id: string) => {
+    setSelectedId(id)
+    setMobileOpen(true)
+    navigate(`/messages?conversation=${id}`, { replace: true })
+  }
+
+  const send = async (body: string) => {
+    if (!selected || !body.trim()) return
+    try {
+      const newMsg = await sendMessage(selected.id, body.trim())
+      setMessages((prev) => [...prev, newMsg])
+      setConversations((prev) =>
+        prev
+          .map((c) =>
+            c.id === selected.id
+              ? { ...c, updatedAt: newMsg.createdAt, context: newMsg.body }
+              : c,
+          )
+          .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)),
+      )
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  return (
+    <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
+      <Header />
+      <main className="mx-auto max-w-6xl px-5 py-8 sm:py-10">
+        <div className="flex items-end justify-between border-b border-line pb-7">
+          <div>
+            <p className="text-xs font-black tracking-[.14em] text-amber">
+              التواصل حول تأجيراتك
+            </p>
+            <h1 className="editorial-display mt-2 text-5xl leading-none text-ink">
+              الرسائل
+            </h1>
+          </div>
+          <p className="hidden text-sm text-ink/55 sm:block">
+            {conversations.reduce((sum, item) => sum + item.unread, 0)} رسائل
+            غير مقروءة
+          </p>
+        </div>
+        <div className="mt-7 grid min-h-[620px] overflow-hidden rounded-[1.8rem] border border-line bg-white lg:grid-cols-[20rem_minmax(0,1fr)]">
+          <aside
+            className={`${
+              mobileOpen ? "hidden lg:block" : "block"
+            } border-l border-line bg-[#fcfaf8]`}
+          >
+            <div className="border-b border-line p-4">
+              <label className="flex h-11 items-center gap-2 rounded-xl border border-line bg-white px-3 text-ink/45">
+                <Search size={17} />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="ابحث في الرسائل"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40"
+                />
+              </label>
+            </div>
+            <div className="max-h-[570px] overflow-y-auto">
+              {visible.map((item) => (
+                <ConversationRow
+                  key={item.id}
+                  conversation={item}
+                  active={item.id === selected?.id}
+                  onClick={() => select(item.id)}
+                />
+              ))}
+              {!visible.length && (
+                <p className="p-8 text-center text-sm text-ink/50">
+                  لا توجد محادثات مطابقة.
+                </p>
+              )}
+            </div>
+          </aside>
+          <section
+            className={`${
+              mobileOpen ? "flex" : "hidden lg:flex"
+            } min-h-[620px] flex-col`}
+          >
+            {selected ? (
+              <Thread
+                conversation={selected}
+                messages={messages.filter(
+                  (item) => item.conversationId === selected.id,
+                )}
+                onBack={() => setMobileOpen(false)}
+                onSend={send}
+              />
+            ) : (
+              <EmptyThread />
+            )}
+          </section>
+        </div>
+      </main>
+    </div>
+  )
 }
 
-function ConversationRow({ conversation, active, onClick }: { conversation: Conversation; active: boolean; onClick: () => void }) { const last = null as Message | null; return <button onClick={onClick} className={`flex w-full gap-3 border-b border-line/70 px-4 py-4 text-right transition ${active ? 'bg-brand-soft/70' : 'hover:bg-white'}`}><div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand text-sm font-black text-cream">{conversation.ownerInitial}{conversation.unread > 0 && <span className="absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full border-2 border-white bg-amber" />}</div><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="truncate text-sm font-black text-ink">{conversation.ownerName}</p><span className="shrink-0 text-[11px] text-ink/45">{relative(conversation.updatedAt)}</span></div><p className="mt-1 truncate text-xs text-ink/55">{last?.body ?? conversation.context}</p><p className="mt-2 truncate text-[11px] font-bold text-brand">{conversation.listingName}</p></div>{conversation.unread > 0 && <span className="mt-2 grid h-5 min-w-5 place-items-center rounded-full bg-amber px-1 text-[10px] font-black text-brand">{conversation.unread}</span>}</button> }
+function ConversationRow({
+  conversation,
+  active,
+  onClick,
+}: {
+  conversation: Conversation
+  active: boolean
+  onClick: () => void
+}) {
+  const last = null as Message | null
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full gap-3 border-b border-line/70 px-4 py-4 text-right transition ${
+        active ? "bg-brand-soft/70" : "hover:bg-white"
+      }`}
+    >
+      <div className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand text-sm font-black text-cream">
+        {conversation.ownerInitial}
+        {conversation.unread > 0 && (
+          <span className="absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full border-2 border-white bg-amber" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-sm font-black text-ink">
+            {conversation.ownerName}
+          </p>
+          <span className="shrink-0 text-[11px] text-ink/45">
+            {relative(conversation.updatedAt)}
+          </span>
+        </div>
+        <p className="mt-1 truncate text-xs text-ink/55">
+          {last?.body ?? conversation.context}
+        </p>
+        <p className="mt-2 truncate text-[11px] font-bold text-brand">
+          {conversation.listingName}
+        </p>
+      </div>
+      {conversation.unread > 0 && (
+        <span className="mt-2 grid h-5 min-w-5 place-items-center rounded-full bg-amber px-1 text-[10px] font-black text-brand">
+          {conversation.unread}
+        </span>
+      )}
+    </button>
+  )
+}
 
-function Thread({ conversation, messages, onBack, onSend }: { conversation: Conversation; messages: Message[]; onBack: () => void; onSend: (body: string) => void }) { const [draft, setDraft] = useState(''); const bottom = useRef<HTMLDivElement>(null); useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages]); const submit = (event: React.FormEvent) => { event.preventDefault(); onSend(draft); setDraft('') }; return <><header className="flex items-center justify-between border-b border-line px-4 py-4 sm:px-6"><div className="flex items-center gap-3"><button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full text-brand hover:bg-brand-soft lg:hidden"><ChevronLeft size={20} /></button><div className="grid h-10 w-10 place-items-center rounded-full bg-brand text-sm font-black text-cream">{conversation.ownerInitial}</div><div><p className="font-black text-ink">{conversation.ownerName}</p><p className="mt-0.5 text-xs text-green">متاح الآن</p></div></div><button className="grid h-9 w-9 place-items-center rounded-full text-ink/55 hover:bg-brand-soft"><MoreHorizontal size={20} /></button></header><div className="flex items-center gap-3 border-b border-line bg-cream/60 px-4 py-3 sm:px-6"><img src={conversation.listingImage} alt={conversation.listingName} className="h-10 w-12 rounded-lg bg-brand-soft object-cover" /><div className="min-w-0 flex-1"><p className="truncate text-xs font-black text-ink">{conversation.listingName}</p><p className="mt-0.5 text-[11px] text-ink/55">{conversation.context}</p></div><Link to="/my-bookings" className="text-xs font-bold text-brand hover:underline">عرض الحجز</Link></div><div className="flex-1 space-y-3 overflow-y-auto bg-[#fdfbf9] px-4 py-6 sm:px-7"><p className="mx-auto w-fit rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold text-brand">اليوم</p>{messages.map(message => message.sender === 'system' ? <p key={message.id} className="mx-auto my-5 max-w-sm text-center text-xs leading-5 text-ink/45">{message.body}</p> : <div key={message.id} className={`flex ${message.sender === 'me' ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.sender === 'me' ? 'rounded-br-md bg-brand text-cream' : 'rounded-bl-md bg-white text-ink shadow-sm ring-1 ring-line/70'}`}><p>{message.body}</p><p className={`mt-1 text-[10px] ${message.sender === 'me' ? 'text-cream/60' : 'text-ink/40'}`}>{time(message.createdAt)}</p></div></div>)}<div ref={bottom} /></div><form onSubmit={submit} className="flex items-end gap-2 border-t border-line bg-white p-3 sm:p-4"><textarea value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(event) } }} rows={1} placeholder="اكتب رسالتك..." className="min-h-11 max-h-28 flex-1 resize-none rounded-xl bg-cream px-4 py-3 text-sm text-ink outline-none placeholder:text-ink/40 focus:ring-2 focus:ring-brand/10" /><button disabled={!draft.trim()} className="grid h-11 w-11 place-items-center rounded-xl bg-brand text-cream transition hover:bg-[#064b32] disabled:opacity-40"><Send size={18} /></button></form></> }
-function EmptyThread() { return <div className="m-auto max-w-sm px-8 text-center"><MessageCircle className="mx-auto text-brand" size={38} /><h2 className="mt-4 text-2xl font-black text-ink">اختر محادثة</h2><p className="mt-2 text-sm leading-6 text-ink/55">تواصل مع المالكين حول الحجوزات والاستلام والعودة.</p></div> }
+function Thread({
+  conversation,
+  messages,
+  onBack,
+  onSend,
+}: {
+  conversation: Conversation
+  messages: Message[]
+  onBack: () => void
+  onSend: (body: string) => void
+}) {
+  const [draft, setDraft] = useState("")
+  const bottom = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    onSend(draft)
+    setDraft("")
+  }
+  return (
+    <>
+      <header className="flex items-center justify-between border-b border-line px-4 py-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="grid h-9 w-9 place-items-center rounded-full text-brand hover:bg-brand-soft lg:hidden"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-brand text-sm font-black text-cream">
+            {conversation.ownerInitial}
+          </div>
+          <div>
+            <p className="font-black text-ink">{conversation.ownerName}</p>
+            <p className="mt-0.5 text-xs text-green">متاح الآن</p>
+          </div>
+        </div>
+        <button className="grid h-9 w-9 place-items-center rounded-full text-ink/55 hover:bg-brand-soft">
+          <MoreHorizontal size={20} />
+        </button>
+      </header>
+      <div className="flex items-center gap-3 border-b border-line bg-cream/60 px-4 py-3 sm:px-6">
+        <img
+          src={conversation.listingImage}
+          alt={conversation.listingName}
+          className="h-10 w-12 rounded-lg bg-brand-soft object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-black text-ink">
+            {conversation.listingName}
+          </p>
+          <p className="mt-0.5 text-[11px] text-ink/55">
+            {conversation.context}
+          </p>
+        </div>
+        <Link
+          to="/my-bookings"
+          className="text-xs font-bold text-brand hover:underline"
+        >
+          عرض الحجز
+        </Link>
+      </div>
+      <div className="flex-1 space-y-3 overflow-y-auto bg-[#fdfbf9] px-4 py-6 sm:px-7">
+        <p className="mx-auto w-fit rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold text-brand">
+          اليوم
+        </p>
+        {messages.map((message) =>
+          message.sender === "system" ? (
+            <p
+              key={message.id}
+              className="mx-auto my-5 max-w-sm text-center text-xs leading-5 text-ink/45"
+            >
+              {message.body}
+            </p>
+          ) : (
+            <div
+              key={message.id}
+              className={`flex ${
+                message.sender === "me" ? "justify-start" : "justify-end"
+              }`}
+            >
+              <div
+                className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                  message.sender === "me"
+                    ? "rounded-br-md bg-brand text-cream"
+                    : "rounded-bl-md bg-white text-ink shadow-sm ring-1 ring-line/70"
+                }`}
+              >
+                <p>{message.body}</p>
+                <p
+                  className={`mt-1 text-[10px] ${
+                    message.sender === "me" ? "text-cream/60" : "text-ink/40"
+                  }`}
+                >
+                  {time(message.createdAt)}
+                </p>
+              </div>
+            </div>
+          ),
+        )}
+        <div ref={bottom} />
+      </div>
+      <form
+        onSubmit={submit}
+        className="flex items-end gap-2 border-t border-line bg-white p-3 sm:p-4"
+      >
+        <textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault()
+              submit(event)
+            }
+          }}
+          rows={1}
+          placeholder="اكتب رسالتك..."
+          className="min-h-11 max-h-28 flex-1 resize-none rounded-xl bg-cream px-4 py-3 text-sm text-ink outline-none placeholder:text-ink/40 focus:ring-2 focus:ring-brand/10"
+        />
+        <button
+          disabled={!draft.trim()}
+          className="grid h-11 w-11 place-items-center rounded-xl bg-brand text-cream transition hover:bg-[#064b32] disabled:opacity-40"
+        >
+          <Send size={18} />
+        </button>
+      </form>
+    </>
+  )
+}
+
+function EmptyThread() {
+  return (
+    <div className="m-auto max-w-sm px-8 text-center">
+      <MessageCircle className="mx-auto text-brand" size={38} />
+      <h2 className="mt-4 text-2xl font-black text-ink">اختر محادثة</h2>
+      <p className="mt-2 text-sm leading-6 text-ink/55">
+        تواصل مع المالكين حول الحجوزات والاستلام والعودة.
+      </p>
+    </div>
+  )
+}

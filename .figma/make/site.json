@@ -1,1 +1,12 @@
-{}
+{
+  "title": "استأجر ما تحتاجه | circle",
+  "language": "ar",
+  "description": "استأجر ما تحتاجه أو أضف ما لديك — كل شيء يبدأ من هنا.",
+  "icons": {
+    "icon": "/favicon.png"
+  },
+  "openGraph": {
+    "title": "استأجر ما تحتاجه | circle",
+    "description": "استأجر ما تحتاجه أو أضف ما لديك — كل شيء يبدأ من هنا."
+  }
+}

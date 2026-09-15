@@ -1,23 +1,340 @@
-import { useMemo, useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { ArrowLeft, CalendarDays, Check, CheckCircle2, Clock3, Handshake, MapPin, MessageCircle, PackageCheck, Search, ShieldCheck, Truck, XCircle } from 'lucide-react'
-import { Header } from '../App'
-import { getOwnerBookings as getBookings, updateBookingStatus } from '../services/bookings'
-import type { BookingStatus, MockBooking } from '../types'
+import { useMemo, useState, useEffect } from "react"
 
-const labels: Record<BookingStatus, string> = { pending: 'طلب جديد', approved: 'في انتظار التسليم', active: 'التأجير جارٍ', return_pending: 'إرجاع بانتظار التأكيد', completed: 'مكتمل', declined: 'مرفوض', cancelled: 'ملغي' }
-const styles: Record<BookingStatus, string> = { pending: 'bg-amber/15 text-[#b53d13]', approved: 'bg-brand-soft text-brand', active: 'bg-green/10 text-green', return_pending: 'bg-amber/15 text-[#b53d13]', completed: 'bg-ink/8 text-ink/60', declined: 'bg-rose/10 text-rose', cancelled: 'bg-rose/10 text-rose' }
-const tabs: Array<{ id: 'all' | BookingStatus; label: string }> = [{ id: 'all', label: 'كل الحجوزات' }, { id: 'pending', label: 'طلبات جديدة' }, { id: 'approved', label: 'التسليم القادم' }, { id: 'active', label: 'نشطة' }, { id: 'return_pending', label: 'طلبات الإرجاع' }, { id: 'completed', label: 'مكتملة' }]
-const num = (value: number) => value.toLocaleString('ar-SA')
+import { Link, useNavigate } from "react-router"
 
-export default function OwnerBookings() {
-  const navigate = useNavigate(); const [bookings, setBookings] = useState<MockBooking[]>([]); useEffect(() => { getBookings().then(setBookings).catch(() => {}) }, []); const [tab, setTab] = useState<'all' | BookingStatus>('all'); const [query, setQuery] = useState(''); const [notice, setNotice] = useState('')
-  const filtered = useMemo(() => bookings.filter(item => (tab === 'all' || item.status === tab) && (item.listingName.includes(query) || item.ownerName.includes(query))), [bookings, tab, query])
-  const counts = { pending: bookings.filter(item => item.status === 'pending').length, active: bookings.filter(item => item.status === 'active').length, return: bookings.filter(item => item.status === 'return_pending').length }
-  const setStatus = async (id: string, status: BookingStatus, message: string) => { try { await updateBookingStatus(id, status); setBookings(prev => prev.map(item => item.id === id ? { ...item, status } : item)); setNotice(message); window.setTimeout(() => setNotice(''), 2600) } catch(e){ console.error(e) } }
-  return <div dir="rtl" lang="ar" className="min-h-screen bg-cream"><Header /><main className="mx-auto max-w-6xl px-5 py-8 sm:py-11"><section className="relative overflow-hidden rounded-[2rem] bg-brand px-6 py-9 text-cream sm:px-10"><div className="absolute -left-10 -top-20 h-52 w-52 rounded-full bg-amber/15" /><div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end"><div><p className="text-xs font-black tracking-[.14em] text-amber">إدارة تجربة المستأجر</p><h1 className="editorial-display mt-2 text-5xl leading-none">حجوزات إعلاناتي</h1><p className="mt-4 max-w-xl text-sm leading-7 text-cream/75">راجع الطلبات، أكد التسليم، وأنهِ الإرجاع من مكان واحد.</p></div><div className="grid grid-cols-3 gap-3"><MiniStat value={counts.pending} label="طلبات جديدة" /><MiniStat value={counts.active} label="تأجير جارٍ" /><MiniStat value={counts.return} label="إرجاع" /></div></div></section>{notice && <p className="mt-5 rounded-xl bg-green/10 px-4 py-3 text-sm font-bold text-green">{notice}</p>}<div className="mt-7 flex flex-col gap-4 border-b border-line pb-5 lg:flex-row lg:items-center lg:justify-between"><div className="flex gap-2 overflow-x-auto pb-1">{tabs.map(item => <button key={item.id} onClick={() => setTab(item.id)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${tab === item.id ? 'bg-brand text-cream' : 'bg-white text-ink/60 hover:bg-brand-soft hover:text-brand'}`}>{item.label}{item.id === 'pending' && counts.pending ? <span className={`mr-2 rounded-full px-1.5 py-0.5 text-[10px] ${tab === item.id ? 'bg-cream text-brand' : 'bg-rose text-white'}`}>{counts.pending}</span> : null}</button>)}</div><label className="flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-ink/50 lg:w-64"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="ابحث في الحجوزات" className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40" /></label></div><div className="mt-7 space-y-4">{filtered.length ? filtered.map(item => <OwnerBookingCard key={item.id} booking={item} onStatus={setStatus} onMessage={() => navigate(`/messages?booking=${item.id}`)} />) : <EmptyOwnerBookings />}</div></main></div>
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  Clock3,
+  Handshake,
+  MapPin,
+  MessageCircle,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  Truck,
+  XCircle,
+} from "lucide-react"
+
+import { Header } from "../App"
+
+import {
+  getOwnerBookings as getBookings,
+  updateBookingStatus,
+} from "../services/bookings"
+
+import type { BookingStatus, MockBooking } from "../types"
+
+const labels: Record<BookingStatus, string> = {
+  pending: "طلب جديد",
+  approved: "في انتظار التسليم",
+  active: "التأجير جارٍ",
+  return_pending: "إرجاع بانتظار التأكيد",
+  completed: "مكتمل",
+  declined: "مرفوض",
+  cancelled: "ملغي",
 }
 
-function OwnerBookingCard({ booking, onStatus, onMessage }: { booking: MockBooking; onStatus: (id: string, status: BookingStatus, message: string) => void; onMessage: () => void }) { const isNew = booking.status === 'pending'; return <article className="grid gap-5 rounded-[1.65rem] border border-line bg-white p-5 transition hover:border-brand/30 hover:shadow-[0_18px_42px_-30px_rgba(7,92,61,.22)] lg:grid-cols-[9rem_minmax(0,1fr)_auto] lg:items-center"><div className="relative"><img src={booking.listingImage} alt={booking.listingName} className="aspect-[4/3] w-full rounded-2xl bg-brand-soft object-cover lg:h-24 lg:w-36" />{isNew && <span className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-amber text-brand shadow"><Clock3 size={14} /></span>}</div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[booking.status]}`}>{labels[booking.status]}</span><span className="text-xs text-ink/45">#{booking.id}</span></div><h2 className="mt-3 text-lg font-black text-ink">{booking.listingName}</h2><p className="mt-1 text-sm text-ink/55">المستأجر: <span className="font-bold text-ink">سارة أحمد</span></p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-ink/60"><span className="inline-flex items-center gap-1.5"><CalendarDays size={15} className="text-brand" /> {booking.start} — {booking.end}</span><span className="inline-flex items-center gap-1.5"><Truck size={15} className="text-brand" /> {booking.delivery ? 'توصيل' : 'استلام شخصي'}</span><span className="inline-flex items-center gap-1.5"><MapPin size={15} className="text-brand" /> الرياض · النخيل</span></div></div><div className="flex flex-wrap gap-2 lg:w-56 lg:justify-end"><p className="w-full text-left text-sm font-black text-brand">{num(booking.total)} ر.س</p>{booking.status === 'pending' ? <><button onClick={() => onStatus(booking.id, 'approved', 'تمت الموافقة على الحجز.')} className="flex-1 rounded-xl bg-brand px-3 py-2.5 text-sm font-black text-cream hover:bg-[#064b32]">قبول</button><button onClick={() => onStatus(booking.id, 'declined', 'تم رفض الطلب.')} className="rounded-xl border border-rose/30 px-3 py-2.5 text-sm font-black text-rose hover:bg-rose/10">رفض</button></> : null}{booking.status === 'approved' ? <button onClick={() => onStatus(booking.id, 'active', 'تم تأكيد تسليم العنصر وبدأ التأجير.')} className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-3 py-2.5 text-sm font-black text-cream"><Handshake size={16} /> تأكيد التسليم</button> : null}{booking.status === 'return_pending' ? <button onClick={() => onStatus(booking.id, 'completed', 'تم تأكيد استلام العنصر وإكمال التأجير.')} className="flex w-full items-center justify-center gap-2 rounded-xl bg-green px-3 py-2.5 text-sm font-black text-white"><CheckCircle2 size={16} /> تأكيد الإرجاع</button> : null}{booking.status === 'active' ? <button onClick={onMessage} className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand px-3 py-2.5 text-sm font-black text-brand hover:bg-brand-soft"><MessageCircle size={16} /> راسل المستأجر</button> : null}{booking.status === 'completed' ? <span className="w-full rounded-xl bg-cream px-3 py-2.5 text-center text-xs font-bold text-ink/55">تم إكمال التأجير بنجاح</span> : null}</div></article> }
-function MiniStat({ value, label }: { value: number; label: string }) { return <div className="rounded-xl border border-white/14 bg-white/10 px-4 py-3 text-center"><p className="text-2xl font-black">{value}</p><p className="mt-1 text-[11px] font-bold text-cream/65">{label}</p></div> }
-function EmptyOwnerBookings() { return <div className="rounded-[1.8rem] border border-dashed border-line bg-white px-6 py-20 text-center"><PackageCheck className="mx-auto text-brand" size={38} /><h2 className="mt-5 text-2xl font-black text-ink">لا توجد حجوزات ضمن هذا القسم</h2><p className="mt-2 text-sm text-ink/55">ستظهر الطلبات الجديدة هنا عندما يبدأ المستأجرون بالحجز.</p><Link to="/dashboard" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-black text-cream">العودة إلى لوحة التحكم <ArrowLeft size={17} /></Link></div> }
+const styles: Record<BookingStatus, string> = {
+  pending: "bg-amber/15 text-[#b53d13]",
+  approved: "bg-brand-soft text-brand",
+  active: "bg-green/10 text-green",
+  return_pending: "bg-amber/15 text-[#b53d13]",
+  completed: "bg-ink/8 text-ink/60",
+  declined: "bg-rose/10 text-rose",
+  cancelled: "bg-rose/10 text-rose",
+}
+
+const tabs: Array<{ id: "all" | BookingStatus label: string }> = [
+  { id: "all", label: "كل الحجوزات" },
+  { id: "pending", label: "طلبات جديدة" },
+  { id: "approved", label: "التسليم القادم" },
+  { id: "active", label: "نشطة" },
+  { id: "return_pending", label: "طلبات الإرجاع" },
+  { id: "completed", label: "مكتملة" },
+]
+
+const num = (value: number) => value.toLocaleString("ar-SA")
+
+export default function OwnerBookings() {
+  const navigate = useNavigate()
+  const [bookings, setBookings] = useState<MockBooking[]>([])
+  useEffect(() => {
+    getBookings()
+      .then(setBookings)
+      .catch(() => {})
+  }, [])
+  const [tab, setTab] = useState<"all" | BookingStatus>("all")
+  const [query, setQuery] = useState("")
+  const [notice, setNotice] = useState("")
+
+  const filtered = useMemo(
+    () =>
+      bookings.filter(
+        (item) =>
+          (tab === "all" || item.status === tab) &&
+          (item.listingName.includes(query) || item.ownerName.includes(query)),
+      ),
+    [bookings, tab, query],
+  )
+
+  const counts = {
+    pending: bookings.filter((item) => item.status === "pending").length,
+    active: bookings.filter((item) => item.status === "active").length,
+    return: bookings.filter((item) => item.status === "return_pending").length,
+  }
+
+  const setStatus = async (
+    id: string,
+    status: BookingStatus,
+    message: string,
+  ) => {
+    try {
+      await updateBookingStatus(id, status)
+      setBookings((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, status } : item)),
+      )
+      setNotice(message)
+      window.setTimeout(() => setNotice(""), 2600)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  return (
+    <div dir="rtl" lang="ar" className="min-h-screen bg-cream">
+      <Header />
+      <main className="mx-auto max-w-6xl px-5 py-8 sm:py-11">
+        <section className="relative overflow-hidden rounded-[2rem] bg-brand px-6 py-9 text-cream sm:px-10">
+          <div className="absolute -left-10 -top-20 h-52 w-52 rounded-full bg-amber/15" />
+          <div className="relative grid gap-7 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <p className="text-xs font-black tracking-[.14em] text-amber">
+                إدارة تجربة المستأجر
+              </p>
+              <h1 className="editorial-display mt-2 text-5xl leading-none">
+                حجوزات إعلاناتي
+              </h1>
+              <p className="mt-4 max-w-xl text-sm leading-7 text-cream/75">
+                راجع الطلبات، أكد التسليم، وأنهِ الإرجاع من مكان واحد.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <MiniStat value={counts.pending} label="طلبات جديدة" />
+              <MiniStat value={counts.active} label="تأجير جارٍ" />
+              <MiniStat value={counts.return} label="إرجاع" />
+            </div>
+          </div>
+        </section>
+        {notice && (
+          <p className="mt-5 rounded-xl bg-green/10 px-4 py-3 text-sm font-bold text-green">
+            {notice}
+          </p>
+        )}
+        <div className="mt-7 flex flex-col gap-4 border-b border-line pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition ${
+                  tab === item.id
+                    ? "bg-brand text-cream"
+                    : "bg-white text-ink/60 hover:bg-brand-soft hover:text-brand"
+                }`}
+              >
+                {item.label}
+                {item.id === "pending" && counts.pending ? (
+                  <span
+                    className={`mr-2 rounded-full px-1.5 py-0.5 text-[10px] ${
+                      tab === item.id
+                        ? "bg-cream text-brand"
+                        : "bg-rose text-white"
+                    }`}
+                  >
+                    {counts.pending}
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+          <label className="flex h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-ink/50 lg:w-64">
+            <Search size={16} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="ابحث في الحجوزات"
+              className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink/40"
+            />
+          </label>
+        </div>
+        <div className="mt-7 space-y-4">
+          {filtered.length ? (
+            filtered.map((item) => (
+              <OwnerBookingCard
+                key={item.id}
+                booking={item}
+                onStatus={setStatus}
+                onMessage={() => navigate(`/messages?booking=${item.id}`)}
+              />
+            ))
+          ) : (
+            <EmptyOwnerBookings />
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function OwnerBookingCard({
+  booking,
+  onStatus,
+  onMessage,
+}: {
+  booking: MockBooking
+  onStatus: (id: string, status: BookingStatus, message: string) => void
+  onMessage: () => void
+}) {
+  const isNew = booking.status === "pending"
+  return (
+    <article className="grid gap-5 rounded-[1.65rem] border border-line bg-white p-5 transition hover:border-brand/30 hover:shadow-[0_18px_42px_-30px_rgba(7,92,61,.22)] lg:grid-cols-[9rem_minmax(0,1fr)_auto] lg:items-center">
+      <div className="relative">
+        <img
+          src={booking.listingImage}
+          alt={booking.listingName}
+          className="aspect-[4/3] w-full rounded-2xl bg-brand-soft object-cover lg:h-24 lg:w-36"
+        />
+        {isNew && (
+          <span className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-amber text-brand shadow">
+            <Clock3 size={14} />
+          </span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-bold ${styles[booking.status]}`}
+          >
+            {labels[booking.status]}
+          </span>
+          <span className="text-xs text-ink/45">#{booking.id}</span>
+        </div>
+        <h2 className="mt-3 text-lg font-black text-ink">
+          {booking.listingName}
+        </h2>
+        <p className="mt-1 text-sm text-ink/55">
+          المستأجر: <span className="font-bold text-ink">سارة أحمد</span>
+        </p>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-ink/60">
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays size={15} className="text-brand" /> {booking.start} —{" "}
+            {booking.end}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Truck size={15} className="text-brand" />{" "}
+            {booking.delivery ? "توصيل" : "استلام شخصي"}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin size={15} className="text-brand" /> الرياض · النخيل
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 lg:w-56 lg:justify-end">
+        <p className="w-full text-left text-sm font-black text-brand">
+          {num(booking.total)} ر.س
+        </p>
+        {booking.status === "pending" ? (
+          <>
+            <button
+              onClick={() =>
+                onStatus(booking.id, "approved", "تمت الموافقة على الحجز.")
+              }
+              className="flex-1 rounded-xl bg-brand px-3 py-2.5 text-sm font-black text-cream hover:bg-[#064b32]"
+            >
+              قبول
+            </button>
+            <button
+              onClick={() => onStatus(booking.id, "declined", "تم رفض الطلب.")}
+              className="rounded-xl border border-rose/30 px-3 py-2.5 text-sm font-black text-rose hover:bg-rose/10"
+            >
+              رفض
+            </button>
+          </>
+        ) : null}
+        {booking.status === "approved" ? (
+          <button
+            onClick={() =>
+              onStatus(
+                booking.id,
+                "active",
+                "تم تأكيد تسليم العنصر وبدأ التأجير.",
+              )
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-3 py-2.5 text-sm font-black text-cream"
+          >
+            <Handshake size={16} /> تأكيد التسليم
+          </button>
+        ) : null}
+        {booking.status === "return_pending" ? (
+          <button
+            onClick={() =>
+              onStatus(
+                booking.id,
+                "completed",
+                "تم تأكيد استلام العنصر وإكمال التأجير.",
+              )
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-green px-3 py-2.5 text-sm font-black text-white"
+          >
+            <CheckCircle2 size={16} /> تأكيد الإرجاع
+          </button>
+        ) : null}
+        {booking.status === "active" ? (
+          <button
+            onClick={onMessage}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand px-3 py-2.5 text-sm font-black text-brand hover:bg-brand-soft"
+          >
+            <MessageCircle size={16} /> راسل المستأجر
+          </button>
+        ) : null}
+        {booking.status === "completed" ? (
+          <span className="w-full rounded-xl bg-cream px-3 py-2.5 text-center text-xs font-bold text-ink/55">
+            تم إكمال التأجير بنجاح
+          </span>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+function MiniStat({ value, label }: { value: number label: string }) {
+  return (
+    <div className="rounded-xl border border-white/14 bg-white/10 px-4 py-3 text-center">
+      <p className="text-2xl font-black">{value}</p>
+      <p className="mt-1 text-[11px] font-bold text-cream/65">{label}</p>
+    </div>
+  )
+}
+
+function EmptyOwnerBookings() {
+  return (
+    <div className="rounded-[1.8rem] border border-dashed border-line bg-white px-6 py-20 text-center">
+      <PackageCheck className="mx-auto text-brand" size={38} />
+      <h2 className="mt-5 text-2xl font-black text-ink">
+        لا توجد حجوزات ضمن هذا القسم
+      </h2>
+      <p className="mt-2 text-sm text-ink/55">
+        ستظهر الطلبات الجديدة هنا عندما يبدأ المستأجرون بالحجز.
+      </p>
+      <Link
+        to="/dashboard"
+        className="mt-7 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-black text-cream"
+      >
+        العودة إلى لوحة التحكم <ArrowLeft size={17} />
+      </Link>
+    </div>
+  )
+}

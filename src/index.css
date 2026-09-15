@@ -48,6 +48,15 @@ body {
   display: none;
 }
 
+/* Mobile safe-area helpers for bottom bars and touches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.h-safe {
+  min-height: env(safe-area-inset-bottom);
+}
+
 .field {
   width: 100%;
   border: 1px solid var(--color-line);
@@ -98,8 +107,11 @@ textarea {
 }
 
 @media (max-width: 640px) {
-  html { scroll-padding-top: 5.5rem; }
+  html { scroll-padding-top: 9rem; }
   .rail { scroll-snap-type: x mandatory; }
+}
+@media (min-width: 641px) {
+  html { scroll-padding-top: 9.5rem; }
 }
 
 /* The shared Circle surface treatment used by marketplace, account, and policy views. */

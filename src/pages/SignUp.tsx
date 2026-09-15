@@ -1,14 +1,119 @@
-import { Link, useLocation, useNavigate } from 'react-router'
-import { useState, type FormEvent } from 'react'
-import { Check, LoaderCircle } from 'lucide-react'
-import AuthLayout, { PhoneField, SubmitButton, TextField } from './AuthLayout'
-import { useAuth } from '../context/AuthContext'
-import { friendlyError } from '../lib/api'
+import { Link, useNavigate } from "react-router"
+import { useState, type FormEvent } from "react"
+import { Check, LoaderCircle } from "lucide-react"
+import AuthLayout, { PhoneField, SubmitButton, TextField } from "./AuthLayout"
+import { useAuth } from "../context/AuthContext"
+import { friendlyError } from "../lib/api"
 
 export default function SignUp() {
-  const navigate = useNavigate(); const location = useLocation(); const { signUp } = useAuth()
-  const [fullName, setFullName] = useState(''); const [phone, setPhone] = useState(''); const [email, setEmail] = useState(''); const [accepted, setAccepted] = useState(false); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
-  const redirect = new URLSearchParams(location.search).get('redirect') ?? '/'
-  const submit = async (event: FormEvent) => { event.preventDefault(); if (fullName.trim().length < 2) { setError('أدخل اسمك الكامل.'); return }; if (phone.length < 9) { setError('أدخل رقم جوال صالحًا.'); return }; if (!accepted) { setError('يجب الموافقة على الشروط للمتابعة.'); return }; setLoading(true); setError(''); try { await signUp({ fullName, phoneNumber: `+966${phone}`, email }); navigate(`/auth/verify-phone?redirect=${encodeURIComponent(redirect)}`) } catch (err) { setError(friendlyError(err, 'تعذّر إنشاء الحساب.')) } finally { setLoading(false) } }
-  return <AuthLayout variant="signup" eyebrow="انضم إلى مجتمع سيركل" title="أنشئ حسابك في دقائق" subtitle="ابدأ بالاستئجار أو شارك أغراضك مع أشخاص قريبين منك." footer={<>لديك حساب بالفعل؟ <Link to="/login" className="font-black text-brand hover:underline">سجّل الدخول</Link></>}><form onSubmit={submit} className="space-y-5"><TextField label="الاسم الكامل" value={fullName} onChange={setFullName} placeholder="مثال: نورة العتيبي" /><PhoneField value={phone} onChange={setPhone} /><TextField label="البريد الإلكتروني" optional value={email} onChange={setEmail} type="email" placeholder="name@example.com" /><label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white p-3.5 text-sm leading-6 text-ink/70"><input checked={accepted} onChange={event => setAccepted(event.target.checked)} type="checkbox" className="mt-1 h-4 w-4 accent-[#075c3d]" /><span>أوافق على <span className="font-bold text-brand">الشروط</span> و<span className="font-bold text-brand">سياسة الخصوصية</span>.</span>{accepted && <Check size={17} className="mr-auto mt-1 text-green" />}</label>{error && <p className="rounded-xl bg-rose/10 px-3 py-2 text-xs font-bold text-rose">{error}</p>}<SubmitButton loading={loading}>{loading ? <><LoaderCircle size={18} className="animate-spin" /> جارٍ إنشاء الحساب</> : 'إنشاء الحساب'}</SubmitButton><p className="text-center text-xs text-ink/50">سنرسل رمز تحقق إلى رقم جوالك لتأكيد الحساب.</p></form></AuthLayout>
+  const navigate = useNavigate()
+  const { signUp } = useAuth()
+  const [fullName, setFullName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [accepted, setAccepted] = useState(false)
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (fullName.trim().length < 2) {
+      setError("أدخل اسمك الكامل.")
+      return
+    }
+    if (phone.length < 9) {
+      setError("أدخل رقم جوال صالحًا.")
+      return
+    }
+    if (!email.includes("@")) {
+      setError("أدخل بريدًا إلكترونيًا صالحًا.")
+      return
+    }
+    if (password.length < 8) {
+      setError("كلمة المرور يجب أن تكون ٨ أحرف على الأقل.")
+      return
+    }
+    if (!accepted) {
+      setError("يجب الموافقة على الشروط للمتابعة.")
+      return
+    }
+    setLoading(true)
+    setError("")
+    try {
+      await signUp({ fullName, phoneNumber: `+20${phone}`, email, password })
+      navigate("/dashboard")
+    } catch (err) {
+      setError(friendlyError(err, "تعذّر إنشاء الحساب."))
+    } finally {
+      setLoading(false)
+    }
+  }
+  return (
+    <AuthLayout
+      variant="signup"
+      eyebrow="انضم إلى مجتمع سيركل"
+      title="أنشئ حسابك في دقائق"
+      subtitle="ابدأ بالاستئجار أو شارك أغراضك مع أشخاص قريبين منك."
+      footer={
+        <>
+          لديك حساب بالفعل؟{" "}
+          <Link to="/login" className="font-black text-brand hover:underline">
+            سجّل الدخول
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-5">
+        <TextField
+          label="الاسم الكامل"
+          value={fullName}
+          onChange={setFullName}
+          placeholder="مثال: نورة العتيبي"
+        />
+        <PhoneField value={phone} onChange={setPhone} />
+        <TextField
+          label="البريد الإلكتروني"
+          value={email}
+          onChange={setEmail}
+          type="email"
+          placeholder="name@example.com"
+        />
+        <TextField
+          label="كلمة المرور"
+          value={password}
+          onChange={setPassword}
+          type="password"
+          placeholder="٨ أحرف على الأقل"
+        />
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-white p-3.5 text-sm leading-6 text-ink/70">
+          <input
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[#075c3d]"
+          />
+          <span>
+            أوافق على <span className="font-bold text-brand">الشروط</span> و
+            <span className="font-bold text-brand">سياسة الخصوصية</span>.
+          </span>
+          {accepted && <Check size={17} className="mr-auto mt-1 text-green" />}
+        </label>
+        {error && (
+          <p className="rounded-xl bg-rose/10 px-3 py-2 text-xs font-bold text-rose">
+            {error}
+          </p>
+        )}
+        <SubmitButton loading={loading}>
+          {loading ? (
+            <>
+              <LoaderCircle size={18} className="animate-spin" /> جارٍ إنشاء
+              الحساب
+            </>
+          ) : (
+            "إنشاء الحساب"
+          )}
+        </SubmitButton>
+      </form>
+    </AuthLayout>
+  )
 }

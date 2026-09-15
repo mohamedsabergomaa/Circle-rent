@@ -1,12 +1,269 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
-import { ArrowLeft, Check, ChevronRight, MapPin, Sparkles, UserRound } from 'lucide-react'
-import { Logo } from '../Logo'
-import { useAuth } from '../context/AuthContext'
+import { useState, type FormEvent } from "react"
 
-const cities = ['القاهرة', 'الجيزة', 'الإسكندرية', 'المعادي', 'مدينة نصر', '٦ أكتوبر', 'الزمالك']
+import { useNavigate } from "react-router"
+
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  MapPin,
+  Sparkles,
+  UserRound,
+} from "lucide-react"
+
+import { Logo } from "../Logo"
+
+import { useAuth } from "../context/AuthContext"
+
+const cities = [
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "المعادي",
+  "مدينة نصر",
+  "٦ أكتوبر",
+  "الزمالك",
+]
+
 export default function Onboarding() {
-  const { user, completeOnboarding } = useAuth(); const navigate = useNavigate(); const [step, setStep] = useState(1); const [city, setCity] = useState(''); const [neighborhood, setNeighborhood] = useState(''); const [bio, setBio] = useState(''); const [saving, setSaving] = useState(false); const [error, setError] = useState('')
-  const finish = async (event: FormEvent) => { event.preventDefault(); if (!city) { setError('اختر مدينتك للمتابعة.'); return }; setSaving(true); try { await completeOnboarding({ city, neighborhood: neighborhood || undefined, bio: bio || undefined }); navigate('/') } catch { setError('تعذّر حفظ بياناتك. حاول مرة أخرى.') } finally { setSaving(false) } }
-  return <div dir="rtl" lang="ar" className="min-h-screen bg-cream px-5 py-5 sm:px-10"><header className="mx-auto flex max-w-6xl items-center justify-between"><Logo /><span className="text-xs font-bold text-ink/45">خطوة أخيرة قبل البدء</span></header><main className="mx-auto flex min-h-[calc(100vh-90px)] max-w-4xl items-center py-12"><div className="grid w-full overflow-hidden rounded-[2rem] border border-line bg-white shadow-[0_28px_70px_-45px_rgba(7,92,61,.24)] lg:grid-cols-[.8fr_1.2fr]"><aside className="bg-brand p-7 text-cream sm:p-10"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber text-brand"><Sparkles size={22} /></div><p className="mt-8 text-xs font-black tracking-[.14em] text-amber">مرحبًا {user?.fullName?.split(' ')[0] ?? ''}</p><h1 className="editorial-display mt-3 text-4xl leading-tight">لنُعدّ حسابك<br />للحيّ الذي تعيش فيه.</h1><p className="mt-4 text-sm leading-7 text-cream/72">سيركل يجمعك بالأشياء المفيدة القريبة منك — للاستئجار أو للمشاركة.</p><div className="mt-10 space-y-3">{[['١', 'مدينتك'], ['٢', 'تفاصيلك الاختيارية'], ['٣', 'ابدأ رحلتك']].map(([number, label], index) => <div key={number} className={`flex items-center gap-3 text-sm ${step > index ? 'font-bold text-cream' : 'text-cream/50'}`}><span className={`grid h-7 w-7 place-items-center rounded-full text-xs ${step > index ? 'bg-cream text-brand' : 'bg-white/10'}`}>{step > index + 1 ? <Check size={15} /> : number}</span>{label}</div>)}</div></aside><section className="p-7 sm:p-10"><div className="flex items-center justify-between"><p className="text-xs font-black tracking-[.12em] text-brand">{step} من ٣</p><div className="flex gap-1.5">{[1, 2, 3].map(item => <span key={item} className={`h-1.5 w-7 rounded-full ${item <= step ? 'bg-amber' : 'bg-line'}`} />)}</div></div><form onSubmit={finish} className="mt-8">{step === 1 && <><span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand"><MapPin size={21} /></span><h2 className="mt-5 text-2xl font-black text-ink">أين تعيش؟</h2><p className="mt-2 text-sm leading-6 text-ink/55">سنستخدم مدينتك لإظهار الأشياء القريبة منك.</p><div className="mt-6 grid gap-2 sm:grid-cols-2">{cities.map(item => <button type="button" onClick={() => { setCity(item); setError('') }} key={item} className={`rounded-xl border px-4 py-3 text-right text-sm font-bold transition ${city === item ? 'border-brand bg-brand text-cream' : 'border-line hover:border-brand hover:bg-brand-soft'}`}>{item}</button>)}</div></>}{step === 2 && <><span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand"><UserRound size={21} /></span><h2 className="mt-5 text-2xl font-black text-ink">عرّف مجتمعك بك</h2><p className="mt-2 text-sm leading-6 text-ink/55">هذه التفاصيل اختيارية، لكنها تجعل ملفك أكثر موثوقية.</p><label className="mt-6 block text-sm font-bold text-ink">الحي <span className="font-medium text-muted">(اختياري)</span><input value={neighborhood} onChange={event => setNeighborhood(event.target.value)} placeholder="مثال: النخيل" className="mt-2 w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" /></label><label className="mt-4 block text-sm font-bold text-ink">نبذة قصيرة <span className="font-medium text-muted">(اختياري)</span><textarea value={bio} onChange={event => setBio(event.target.value)} placeholder="أخبر مجتمع سيركل عن اهتماماتك..." rows={3} className="mt-2 w-full resize-none rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10" /></label></>}{step === 3 && <div className="py-4 text-center"><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green/10 text-green"><Check size={31} /></div><h2 className="mt-6 text-3xl font-black text-ink">كل شيء جاهز</h2><p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-ink/60">يمكنك الآن استئجار ما تحتاجه أو مشاركة ما لديك مع مجتمعك القريب.</p><div className="mx-auto mt-8 grid max-w-sm grid-cols-2 gap-3 rounded-2xl bg-cream p-4 text-right text-xs"><span className="font-bold text-brand">{city}</span><span className="text-ink/55">مدينتك</span><span className="font-bold text-green">✓ موثّق</span><span className="text-ink/55">رقم الجوال</span></div></div>}{error && <p className="mt-5 rounded-xl bg-rose/10 px-3 py-2 text-xs font-bold text-rose">{error}</p>}<div className="mt-8 flex items-center justify-between">{step > 1 ? <button type="button" onClick={() => setStep(value => value - 1)} className="inline-flex items-center gap-1 text-sm font-bold text-brand"><ChevronRight size={17} /> السابق</button> : <span />}{step < 3 ? <button type="button" onClick={() => { if (step === 1 && !city) { setError('اختر مدينتك للمتابعة.'); return }; setError(''); setStep(value => value + 1) }} className="inline-flex items-center gap-2 rounded-xl bg-amber px-5 py-3 text-sm font-black text-brand">التالي <ArrowLeft size={17} /></button> : <button disabled={saving} type="submit" className="inline-flex items-center gap-2 rounded-xl bg-amber px-5 py-3 text-sm font-black text-brand disabled:opacity-60">{saving ? 'جارٍ الحفظ...' : <>ابدأ الآن <ArrowLeft size={17} /></>}</button>}</div></form></section></div></main></div>
+  const { user, completeOnboarding } = useAuth()
+  const navigate = useNavigate()
+  const [step, setStep] = useState(1)
+  const [city, setCity] = useState("")
+  const [neighborhood, setNeighborhood] = useState("")
+  const [bio, setBio] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const finish = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!city) {
+      setError("اختر مدينتك للمتابعة.")
+      return
+    }
+    setSaving(true)
+    try {
+      await completeOnboarding({
+        city,
+        neighborhood: neighborhood || undefined,
+        bio: bio || undefined,
+      })
+      navigate("/")
+    } catch {
+      setError("تعذّر حفظ بياناتك. حاول مرة أخرى.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      dir="rtl"
+      lang="ar"
+      className="min-h-screen bg-cream px-5 py-5 sm:px-10"
+    >
+      <header className="mx-auto flex max-w-6xl items-center justify-between">
+        <Logo />
+        <span className="text-xs font-bold text-ink/45">
+          خطوة أخيرة قبل البدء
+        </span>
+      </header>
+      <main className="mx-auto flex min-h-[calc(100vh-90px)] max-w-4xl items-center py-12">
+        <div className="grid w-full overflow-hidden rounded-[2rem] border border-line bg-white shadow-[0_28px_70px_-45px_rgba(7,92,61,.24)] lg:grid-cols-[.8fr_1.2fr]">
+          <aside className="bg-brand p-7 text-cream sm:p-10">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-amber text-brand">
+              <Sparkles size={22} />
+            </div>
+            <p className="mt-8 text-xs font-black tracking-[.14em] text-amber">
+              مرحبًا {user?.fullName?.split(" ")[0] ?? ""}
+            </p>
+            <h1 className="editorial-display mt-3 text-4xl leading-tight">
+              لنُعدّ حسابك
+              <br />
+              للحيّ الذي تعيش فيه.
+            </h1>
+            <p className="mt-4 text-sm leading-7 text-cream/72">
+              سيركل يجمعك بالأشياء المفيدة القريبة منك — للاستئجار أو للمشاركة.
+            </p>
+            <div className="mt-10 space-y-3">
+              {[
+                ["١", "مدينتك"],
+                ["٢", "تفاصيلك الاختيارية"],
+                ["٣", "ابدأ رحلتك"],
+              ].map(([number, label], index) => (
+                <div
+                  key={number}
+                  className={`flex items-center gap-3 text-sm ${
+                    step > index ? "font-bold text-cream" : "text-cream/50"
+                  }`}
+                >
+                  <span
+                    className={`grid h-7 w-7 place-items-center rounded-full text-xs ${
+                      step > index ? "bg-cream text-brand" : "bg-white/10"
+                    }`}
+                  >
+                    {step > index + 1 ? <Check size={15} /> : number}
+                  </span>
+                  {label}
+                </div>
+              ))}
+            </div>
+          </aside>
+          <section className="p-7 sm:p-10">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-black tracking-[.12em] text-brand">
+                {step} من ٣
+              </p>
+              <div className="flex gap-1.5">
+                {[1, 2, 3].map((item) => (
+                  <span
+                    key={item}
+                    className={`h-1.5 w-7 rounded-full ${
+                      item <= step ? "bg-amber" : "bg-line"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+            <form onSubmit={finish} className="mt-8">
+              {step === 1 && (
+                <>
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand">
+                    <MapPin size={21} />
+                  </span>
+                  <h2 className="mt-5 text-2xl font-black text-ink">
+                    أين تعيش؟
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-ink/55">
+                    سنستخدم مدينتك لإظهار الأشياء القريبة منك.
+                  </p>
+                  <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                    {cities.map((item) => (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCity(item)
+                          setError("")
+                        }}
+                        key={item}
+                        className={`rounded-xl border px-4 py-3 text-right text-sm font-bold transition ${
+                          city === item
+                            ? "border-brand bg-brand text-cream"
+                            : "border-line hover:border-brand hover:bg-brand-soft"
+                        }`}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-soft text-brand">
+                    <UserRound size={21} />
+                  </span>
+                  <h2 className="mt-5 text-2xl font-black text-ink">
+                    عرّف مجتمعك بك
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-ink/55">
+                    هذه التفاصيل اختيارية، لكنها تجعل ملفك أكثر موثوقية.
+                  </p>
+                  <label className="mt-6 block text-sm font-bold text-ink">
+                    الحي{" "}
+                    <span className="font-medium text-muted">(اختياري)</span>
+                    <input
+                      value={neighborhood}
+                      onChange={(event) => setNeighborhood(event.target.value)}
+                      placeholder="مثال: النخيل"
+                      className="mt-2 w-full rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10"
+                    />
+                  </label>
+                  <label className="mt-4 block text-sm font-bold text-ink">
+                    نبذة قصيرة{" "}
+                    <span className="font-medium text-muted">(اختياري)</span>
+                    <textarea
+                      value={bio}
+                      onChange={(event) => setBio(event.target.value)}
+                      placeholder="أخبر مجتمع سيركل عن اهتماماتك..."
+                      rows={3}
+                      className="mt-2 w-full resize-none rounded-xl border border-line px-4 py-3 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/10"
+                    />
+                  </label>
+                </>
+              )}
+              {step === 3 && (
+                <div className="py-4 text-center">
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green/10 text-green">
+                    <Check size={31} />
+                  </div>
+                  <h2 className="mt-6 text-3xl font-black text-ink">
+                    كل شيء جاهز
+                  </h2>
+                  <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-ink/60">
+                    يمكنك الآن استئجار ما تحتاجه أو مشاركة ما لديك مع مجتمعك
+                    القريب.
+                  </p>
+                  <div className="mx-auto mt-8 grid max-w-sm grid-cols-2 gap-3 rounded-2xl bg-cream p-4 text-right text-xs">
+                    <span className="font-bold text-brand">{city}</span>
+                    <span className="text-ink/55">مدينتك</span>
+                    <span className="font-bold text-green">✓ موثّق</span>
+                    <span className="text-ink/55">رقم الجوال</span>
+                  </div>
+                </div>
+              )}
+              {error && (
+                <p className="mt-5 rounded-xl bg-rose/10 px-3 py-2 text-xs font-bold text-rose">
+                  {error}
+                </p>
+              )}
+              <div className="mt-8 flex items-center justify-between">
+                {step > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => setStep((value) => value - 1)}
+                    className="inline-flex items-center gap-1 text-sm font-bold text-brand"
+                  >
+                    <ChevronRight size={17} /> السابق
+                  </button>
+                ) : (
+                  <span />
+                )}
+                {step < 3 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (step === 1 && !city) {
+                        setError("اختر مدينتك للمتابعة.")
+                        return
+                      }
+                      setError("")
+                      setStep((value) => value + 1)
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber px-5 py-3 text-sm font-black text-brand"
+                  >
+                    التالي <ArrowLeft size={17} />
+                  </button>
+                ) : (
+                  <button
+                    disabled={saving}
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-xl bg-amber px-5 py-3 text-sm font-black text-brand disabled:opacity-60"
+                  >
+                    {saving ? (
+                      "جارٍ الحفظ..."
+                    ) : (
+                      <>
+                        ابدأ الآن <ArrowLeft size={17} />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </form>
+          </section>
+        </div>
+      </main>
+    </div>
+  )
 }

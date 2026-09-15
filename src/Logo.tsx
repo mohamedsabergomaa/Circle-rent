@@ -1,6 +1,12 @@
 import circleLogo from "./imports/CIRCLE_logo_rebrand_-_Omar_Awad_1_.png"
 
-export function Logo({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
+export function Logo({
+  light = false,
+  compact = false,
+}: {
+  light?: boolean
+  compact?: boolean
+}) {
   return (
     <img
       src={circleLogo}
